@@ -188,7 +188,7 @@ class FlakeService:
                 text=True,
                 check=True,
             )
-            
+
             # Check if there was a warning about non-existent input
             if result.stderr and "does not match any input" in result.stderr:
                 logger.warning(
