@@ -165,9 +165,11 @@ def process_flake_updates(
                     )
 
                     # Commit changes
-                    commit_message = (
-                        f"Update {input_name} in {Path(flake.file_path).parent}"
-                    )
+                    parent_path = Path(flake.file_path).parent
+                    if parent_path == Path():
+                        commit_message = f"Update {input_name}"
+                    else:
+                        commit_message = f"Update {input_name} in {parent_path}"
                     if gitea_service.commit_changes(
                         branch_name,
                         commit_message,
