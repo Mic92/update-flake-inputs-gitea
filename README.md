@@ -34,28 +34,6 @@ jobs:
         gitea-token: ${{ secrets.GITEA_TOKEN }}
 ```
 
-## Configuration
-
-### Environment Variables
-
-- `GITEA_URL`: Gitea server URL (required)
-- `GITEA_TOKEN`: Authentication token with repo permissions (required)
-- `GITEA_REPOSITORY`: Repository in format `owner/repo` (required)
-- `EXCLUDE_PATTERNS`: Comma-separated glob patterns to exclude (optional)
-
-### Command Line Options
-
-```bash
-update-flake-inputs --help
-```
-
-- `--gitea-url`: Gitea server URL
-- `--gitea-token`: Authentication token
-- `--gitea-repository`: Repository (owner/repo)
-- `--exclude-patterns`: Patterns to exclude
-- `--base-branch`: Base branch for PRs (default: main)
-- `-v, --verbose`: Enable verbose logging
-
 ## Development
 
 ### Setup
