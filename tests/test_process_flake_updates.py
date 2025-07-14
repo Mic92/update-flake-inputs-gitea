@@ -15,13 +15,15 @@ from update_flake_inputs.gitea_service import GiteaService
 class TestGiteaService(GiteaService):
     def __init__(self) -> None:
         """Initialize test service without API credentials."""
-        super().__init__(
-            api_url="https://gitea.example.com",
-            token="test-token",  # noqa: S106
-            owner="test-owner",
-            repo="test-repo",
-        )
+        self.api_url = "https://gitea.example.com"
+        self.token = "test-token"  # noqa: S105
+        self.owner = "test-owner"
+        self.repo = "test-repo"
         self.pr_creation_attempts: list[dict[str, str]] = []
+        # Skip token validation in tests
+
+    def _validate_token(self) -> None:
+        """Skip token validation in tests."""
 
     def create_pull_request(
         self,

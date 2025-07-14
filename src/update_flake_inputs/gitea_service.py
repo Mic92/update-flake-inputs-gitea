@@ -62,6 +62,35 @@ class GiteaService:
         self.owner = owner
         self.repo = repo
 
+        # Validate token and log authenticated user
+        self._validate_token()
+
+    def _validate_token(self) -> None:
+        """Validate the token and log the authenticated user.
+
+        Raises:
+            APIError: If token validation fails
+
+        """
+        try:
+            user_info = self._make_request("GET", "/user")
+            logger.info(
+                "Authenticated as user: %s",
+                user_info.get("login", "unknown"),
+            )
+
+            # Also check repository access
+            repo_info = self._make_request("GET", f"/repos/{self.owner}/{self.repo}")
+            logger.info(
+                "Repository %s/%s - permissions: %s",
+                self.owner,
+                self.repo,
+                repo_info.get("permissions", {}),
+            )
+        except APIError:
+            logger.exception("Failed to validate token")
+            raise
+
     @contextlib.contextmanager
     def worktree(self, branch_name: str) -> Iterator[Path]:
         """Context manager for creating and cleaning up a git worktree.
