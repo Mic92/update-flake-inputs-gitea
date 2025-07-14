@@ -181,11 +181,22 @@ class FlakeService:
             flake_dir = absolute_flake_path.parent or Path()
 
             # Use nix flake update to update specific input
-            subprocess.run(
+            result = subprocess.run(
                 ["nix", "flake", "update", input_name],
                 cwd=str(flake_dir),
+                capture_output=True,
+                text=True,
                 check=True,
             )
+            
+            # Check if there was a warning about non-existent input
+            if result.stderr and "does not match any input" in result.stderr:
+                logger.warning(
+                    "Failed to update input %s in %s: %s",
+                    input_name,
+                    flake_file,
+                    result.stderr.strip(),
+                )
 
             logger.info(
                 "Successfully updated flake input: %s in %s",
