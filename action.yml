@@ -1,0 +1,36 @@
+name: 'Update Flake Inputs'
+description: 'Creates pull requests for each flake input update on Gitea'
+author: 'Your Name'
+
+inputs:
+  gitea-url:
+    description: 'Gitea server URL'
+    required: true
+  gitea-token:
+    description: 'Gitea authentication token'
+    required: true
+  gitea-repository:
+    description: 'Repository in format owner/repo'
+    required: false
+    default: ${{ gitea.repository }}
+  exclude-patterns:
+    description: 'Comma-separated list of glob patterns to exclude flake.nix files'
+    required: false
+    default: ''
+  base-branch:
+    description: 'Base branch to create PRs against'
+    required: false
+    default: 'main'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run update-flake-inputs
+      shell: bash
+      run: |
+        nix run .#update-flake-inputs -- \
+          --gitea-url "${{ inputs.gitea-url }}" \
+          --gitea-token "${{ inputs.gitea-token }}" \
+          --gitea-repository "${{ inputs.gitea-repository }}" \
+          --exclude-patterns "${{ inputs.exclude-patterns }}" \
+          --base-branch "${{ inputs.base-branch }}"

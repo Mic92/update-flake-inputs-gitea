@@ -1,0 +1,42 @@
+{
+  "nodes": {
+    "nixos-hardware": {
+      "locked": {
+        "lastModified": 1700000000,
+        "narHash": "sha256-0000000000000000000000000000000000000000000000000000000000000000",
+        "owner": "NixOS",
+        "repo": "nixos-hardware",
+        "rev": "0000000000000000000000000000000000000000",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixos-hardware",
+        "type": "github"
+      }
+    },
+    "flake-utils": {
+      "locked": {
+        "lastModified": 1700000000,
+        "narHash": "sha256-0000000000000000000000000000000000000000000000000000000000000000",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "0000000000000000000000000000000000000000",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixos-hardware": "nixos-hardware",
+        "flake-utils": "flake-utils"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
