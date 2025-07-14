@@ -31,6 +31,8 @@ class TestGiteaService(GiteaService):
         base_branch: str,
         title: str,
         body: str,
+        *,
+        auto_merge: bool = False,
     ) -> None:
         """Record PR creation attempt without making actual API call."""
         self.pr_creation_attempts.append(
@@ -39,6 +41,7 @@ class TestGiteaService(GiteaService):
                 "base_branch": base_branch,
                 "title": title,
                 "body": body,
+                "auto_merge": str(auto_merge),
             }
         )
 
@@ -122,6 +125,7 @@ class TestProcessFlakeUpdates:
                 test_gitea_service,
                 "",
                 "main",
+                auto_merge=False,
             )
 
             # Verify NO pull request was created
@@ -228,6 +232,7 @@ class TestProcessFlakeUpdates:
                 test_gitea_service,
                 "",
                 "main",
+                auto_merge=False,
             )
 
             # Verify pull request was created

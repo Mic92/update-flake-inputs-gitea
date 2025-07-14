@@ -23,6 +23,10 @@ inputs:
     description: 'Base branch to create PRs against'
     required: false
     default: 'main'
+  auto-merge:
+    description: 'Automatically merge PRs when checks succeed'
+    required: false
+    default: 'false'
 
 runs:
   using: 'composite'
@@ -30,9 +34,15 @@ runs:
     - name: Run update-flake-inputs
       shell: bash
       run: |
+        AUTO_MERGE_FLAG=""
+        if [[ "${{ inputs.auto-merge }}" == "true" ]]; then
+          AUTO_MERGE_FLAG="--auto-merge"
+        fi
+
         nix run github:Mic92/update-flake-inputs-gitea#update-flake-inputs -- \
           --gitea-url "${{ inputs.gitea-url }}" \
           --gitea-token "${{ inputs.gitea-token }}" \
           --gitea-repository "${{ inputs.gitea-repository }}" \
           --exclude-patterns "${{ inputs.exclude-patterns }}" \
-          --base-branch "${{ inputs.base-branch }}"
+          --base-branch "${{ inputs.base-branch }}" \
+          $AUTO_MERGE_FLAG

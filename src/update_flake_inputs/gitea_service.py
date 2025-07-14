@@ -6,6 +6,7 @@ import logging
 import os
 import subprocess
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -277,6 +278,8 @@ class GiteaService:
         base_branch: str,
         title: str,
         body: str,
+        *,
+        auto_merge: bool = False,
     ) -> None:
         """Create a pull request.
 
@@ -285,6 +288,7 @@ class GiteaService:
             base_branch: Target branch
             title: PR title
             body: PR description
+            auto_merge: Whether to automatically merge when checks succeed
 
         """
         endpoint = f"/repos/{self.owner}/{self.repo}/pulls"
@@ -305,3 +309,56 @@ class GiteaService:
                 logger.info("Pull request already exists for branch: %s", branch_name)
             else:
                 raise
+            return  # Exit early if PR creation failed
+
+        # Auto-merge if requested and PR was created successfully
+        if auto_merge:
+            try:
+                self._merge_pull_request(pr["number"])
+            except APIError:
+                logger.exception("Failed to auto-merge pull request #%d", pr["number"])
+                # Don't re-raise - PR was created successfully
+
+    def _merge_pull_request(self, pr_number: int) -> None:
+        """Merge a pull request when checks succeed.
+
+        Args:
+            pr_number: Pull request number
+
+        Raises:
+            APIError: If merge fails
+
+        """
+        endpoint = f"/repos/{self.owner}/{self.repo}/pulls/{pr_number}/merge"
+
+        merge_data: dict[str, object] = {
+            "Do": "merge",
+            "merge_when_checks_succeed": True,
+            "delete_branch_after_merge": True,
+        }
+
+        # Keep retrying if we get "Please try again later"
+        max_retries = 5
+        last_error = None
+
+        for attempt in range(max_retries):
+            try:
+                response = self._make_request("POST", endpoint, merge_data)
+            except APIError as e:
+                last_error = e
+                if attempt == max_retries - 1:
+                    raise
+                logger.info("Merge request failed, retrying...")
+                time.sleep(2)
+                continue
+
+            if response.get("message") == "Please try again later":
+                if attempt < max_retries - 1:
+                    logger.info("Merge not ready, retrying in 2 seconds...")
+                    time.sleep(2)
+                    continue
+                msg = "Max retries reached for merge"
+                raise APIError(msg) from last_error
+
+            logger.info("Pull request #%d merge initiated", pr_number)
+            return

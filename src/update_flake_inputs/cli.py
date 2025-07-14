@@ -67,6 +67,12 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--auto-merge",
+        action="store_true",
+        help="Automatically merge PRs when checks succeed",
+    )
+
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -114,6 +120,8 @@ def process_flake_updates(
     gitea_service: GiteaService,
     exclude_patterns: str,
     base_branch: str,
+    *,
+    auto_merge: bool,
 ) -> None:
     """Process all flake updates.
 
@@ -122,6 +130,7 @@ def process_flake_updates(
         gitea_service: Gitea service instance
         exclude_patterns: Patterns to exclude
         base_branch: Base branch for PRs
+        auto_merge: Whether to automatically merge PRs
 
     """
     # Discover flake files
@@ -187,6 +196,7 @@ def process_flake_updates(
                             base_branch,
                             pr_title,
                             pr_body,
+                            auto_merge=auto_merge,
                         )
                     else:
                         logger.info(
@@ -229,6 +239,7 @@ def main() -> None:
             gitea_service,
             args.exclude_patterns,
             args.base_branch,
+            auto_merge=args.auto_merge,
         )
 
         logger.info("Completed processing all flake updates")
