@@ -36,7 +36,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"] # Use of assert detected
+"tests/*" = [
+    "S101", # Use of assert detected
+    "D101"
+]
 
 
 [tool.ruff.format]
@@ -60,6 +63,7 @@ strict_equality = true
 minversion = "6.0"
 addopts = "-ra -q --strict-markers --strict-config"
 testpaths = ["tests"]
+pythonpath = ["src"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"

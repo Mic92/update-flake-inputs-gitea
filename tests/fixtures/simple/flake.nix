@@ -4,7 +4,13 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixos-hardware, flake-utils }: {
-    # Simple test flake
-  };
+  outputs =
+    {
+      self,
+      nixos-hardware,
+      flake-utils,
+    }:
+    {
+      # Simple test flake
+    };
 }

@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .exceptions import APIError, GiteaServiceError
+from .exceptions import APIError
 
 logger = logging.getLogger(__name__)
 
@@ -171,56 +171,6 @@ class GiteaService:
             )
         except APIError:
             return None
-
-    def _ensure_base_branch_exists(self, base_branch: str) -> Branch:
-        """Ensure that the base branch exists.
-
-        Args:
-            base_branch: Name of the base branch
-
-        Returns:
-            Branch object
-
-        Raises:
-            GiteaServiceError: If branch not found
-
-        """
-        base = self.get_branch(base_branch)
-        if not base:
-            msg = f"Base branch {base_branch} not found"
-            raise GiteaServiceError(msg)
-        return base
-
-    def create_branch(self, branch_name: str, base_branch: str) -> None:
-        """Create a new branch.
-
-        Args:
-            branch_name: Name for the new branch
-            base_branch: Base branch to create from
-
-        """
-        # Get base branch info
-        self._ensure_base_branch_exists(base_branch)
-
-        # Check if branch already exists
-        existing = self.get_branch(branch_name)
-        if existing:
-            # Delete the existing branch
-            endpoint = f"/repos/{self.owner}/{self.repo}/branches/{branch_name}"
-            try:
-                self._make_request("DELETE", endpoint)
-                logger.info("Deleted existing branch: %s", branch_name)
-            except APIError:
-                logger.warning("Failed to delete existing branch: %s", branch_name)
-
-        # Create new branch via API
-        endpoint = f"/repos/{self.owner}/{self.repo}/branches"
-        request_data: dict[str, object] = {
-            "new_branch_name": branch_name,
-            "old_ref_name": base_branch,
-        }
-        self._make_request("POST", endpoint, request_data)
-        logger.info("Created branch %s from %s", branch_name, base_branch)
 
     def commit_changes(
         self,

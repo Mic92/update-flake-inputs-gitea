@@ -38,8 +38,10 @@ class TestFlakeService:
         # Discover flakes
         flakes = flake_service.discover_flake_files()
 
-        # Should find simple/flake.nix, minimal/flake.nix, subflake/flake.nix and subflake/sub/flake.nix
-        assert len(flakes) >= 4
+        # Should find simple/flake.nix, minimal/flake.nix, subflake/flake.nix
+        # and subflake/sub/flake.nix
+        min_expected_flakes = 4
+        assert len(flakes) >= min_expected_flakes
 
         # Find the simple flake
         simple_flake = next(
@@ -48,7 +50,8 @@ class TestFlakeService:
         assert simple_flake is not None
         assert "nixos-hardware" in simple_flake.inputs
         assert "flake-utils" in simple_flake.inputs
-        assert len(simple_flake.inputs) == 2
+        simple_flake_input_count = 2
+        assert len(simple_flake.inputs) == simple_flake_input_count
 
         # Find the root subflake
         root_subflake = next(
@@ -65,7 +68,8 @@ class TestFlakeService:
         assert nested_subflake is not None
         assert "flake-utils" in nested_subflake.inputs
         assert "nixos-hardware" in nested_subflake.inputs
-        assert len(nested_subflake.inputs) == 2
+        nested_subflake_input_count = 2
+        assert len(nested_subflake.inputs) == nested_subflake_input_count
 
         # Find the minimal flake
         minimal_flake = next(
@@ -122,7 +126,8 @@ class TestFlakeService:
         flakes = flake_service.discover_flake_files("**/flake.nix#flake-utils")
 
         # All flakes should still be discovered
-        assert len(flakes) >= 4
+        min_expected_flakes = 4
+        assert len(flakes) >= min_expected_flakes
 
         # But flake-utils should be excluded from all inputs
         for flake in flakes:

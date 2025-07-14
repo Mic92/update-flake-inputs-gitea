@@ -4,7 +4,13 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware";
   };
 
-  outputs = { self, flake-utils, nixos-hardware }: {
-    # Nested subflake
-  };
+  outputs =
+    {
+      self,
+      flake-utils,
+      nixos-hardware,
+    }:
+    {
+      # Nested subflake
+    };
 }

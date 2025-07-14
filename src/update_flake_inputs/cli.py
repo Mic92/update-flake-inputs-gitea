@@ -140,7 +140,12 @@ def process_flake_updates(
         # Update each input
         for input_name in flake.inputs:
             try:
-                branch_name = f"update-{Path(flake.file_path).parent}-{input_name}"
+                # Generate branch name - don't include '.' for root directory
+                parent_path = Path(flake.file_path).parent
+                if parent_path == Path():
+                    branch_name = f"update-{input_name}"
+                else:
+                    branch_name = f"update-{parent_path}-{input_name}"
                 branch_name = branch_name.replace("/", "-").strip("-")
 
                 logger.info(
@@ -149,9 +154,6 @@ def process_flake_updates(
                     flake.file_path,
                     branch_name,
                 )
-
-                # Create branch
-                gitea_service.create_branch(branch_name, base_branch)
 
                 # Create worktree and update input
                 with gitea_service.worktree(branch_name) as worktree_path:

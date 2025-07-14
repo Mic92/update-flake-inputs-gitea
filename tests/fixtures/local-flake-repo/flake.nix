@@ -1,10 +1,9 @@
 {
-  inputs = {
-    # Local input that will cause nix flake lock to fail
-    local.url = "path:../nonexistent";
-  };
+  description = "A local test flake";
 
-  outputs = { self, local }: {
-    # Flake with local input
-  };
+  outputs =
+    { self }:
+    {
+      lib.version = "1.0.0";
+    };
 }
