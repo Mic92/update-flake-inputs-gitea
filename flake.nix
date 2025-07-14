@@ -24,9 +24,10 @@
       perSystem =
         { config, pkgs, ... }:
         {
-          packages = pkgs.callPackage ./packages.nix { };
+          packages.update-flake-inputs = pkgs.callPackage ./package.nix { };
+          packages.default = config.packages.update-flake-inputs;
 
-          devShells = pkgs.callPackage ./shells.nix {
+          devShells.default = pkgs.callPackage ./shell.nix {
             inherit (config.packages) update-flake-inputs;
           };
 
