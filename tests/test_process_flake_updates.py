@@ -236,7 +236,7 @@ class TestProcessFlakeUpdates:
             pr_attempt = test_gitea_service.pr_creation_attempts[0]
             assert pr_attempt["branch_name"] == "update-flake-utils"
             assert pr_attempt["base_branch"] == "main"
-            assert pr_attempt["title"] == "Update flake-utils in ."
+            assert pr_attempt["title"] == "Update flake-utils"
             assert "updates the `flake-utils` input" in pr_attempt["body"]
 
             # Verify PR was created with correct information
