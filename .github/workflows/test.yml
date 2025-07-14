@@ -1,0 +1,30 @@
+name: Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v31
+
+    - name: Check flake
+      run: nix flake check -L
+
+    - name: Run tests
+      run: nix develop -c pytest -xvs
+
+    - name: Run linters
+      run: |
+        nix develop -c ruff format . --check
+        nix develop -c ruff check .
+        nix develop -c mypy .
+
+    - name: Build package
+      run: nix build -L
