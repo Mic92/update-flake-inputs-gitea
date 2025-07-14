@@ -234,7 +234,7 @@ class GiteaService:
 
         # Push to remote
         subprocess.run(
-            ["git", "push", "origin", branch_name],
+            ["git", "push", "origin", "--force", branch_name],
             cwd=worktree_path,
             check=True,
         )
