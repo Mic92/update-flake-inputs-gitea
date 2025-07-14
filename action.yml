@@ -6,9 +6,11 @@ inputs:
   gitea-url:
     description: 'Gitea server URL'
     required: true
+    default: ${{ gitea.server_url }}
   gitea-token:
     description: 'Gitea authentication token'
     required: true
+    default: ${{ secrets.GITEA_TOKEN }}
   gitea-repository:
     description: 'Repository in format owner/repo'
     required: false
