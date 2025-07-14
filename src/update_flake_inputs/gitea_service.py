@@ -18,6 +18,9 @@ from .exceptions import APIError
 
 logger = logging.getLogger(__name__)
 
+# HTTP Status Codes
+HTTP_CONFLICT = 409
+
 
 @dataclass
 class Branch:
@@ -255,20 +258,7 @@ class GiteaService:
             body: PR description
 
         """
-        # Check if PR already exists
         endpoint = f"/repos/{self.owner}/{self.repo}/pulls"
-        params = urllib.parse.urlencode(
-            {
-                "state": "open",
-                "head": branch_name,
-                "base": base_branch,
-            }
-        )
-        existing_prs: list[Any] = self._make_request("GET", f"{endpoint}?{params}")
-
-        if existing_prs:
-            logger.info("Pull request already exists for branch: %s", branch_name)
-            return
 
         # Create pull request
         request_data: dict[str, object] = {
@@ -277,6 +267,12 @@ class GiteaService:
             "title": title,
             "body": body,
         }
-        pr: dict[str, Any] = self._make_request("POST", endpoint, request_data)
 
-        logger.info("Created pull request #%d: %s", pr["number"], pr["html_url"])
+        try:
+            pr: dict[str, Any] = self._make_request("POST", endpoint, request_data)
+            logger.info("Created pull request #%d: %s", pr["number"], pr["html_url"])
+        except APIError as e:
+            if e.status_code == HTTP_CONFLICT:
+                logger.info("Pull request already exists for branch: %s", branch_name)
+            else:
+                raise
