@@ -46,7 +46,7 @@ runs:
         # Prepend GitHub access token to NIX_CONFIG if provided
         our_nix_config="extra-experimental-features = nix-command flakes"
         if [[ -n "${{ inputs.github-token }}" ]]; then
-          our_nix_config+="access-tokens = github.com=${{ inputs.github-token }}"
+          our_nix_config+=" access-tokens = github.com=${{ inputs.github-token }}"
         fi
         export NIX_CONFIG="${our_nix_config}${NIX_CONFIG:+ $NIX_CONFIG}"
 
