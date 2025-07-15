@@ -54,7 +54,7 @@ runs:
 
         set -x
 
-        nix \
+        nix run \
           "${GITHUB_ACTION_PATH}#update-flake-inputs" -- \
           --gitea-url "${{ inputs.gitea-url }}" \
           --gitea-token "${{ inputs.gitea-token }}" \
