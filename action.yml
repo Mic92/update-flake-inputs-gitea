@@ -52,6 +52,7 @@ runs:
           fi
         fi
 
+        set -x
         nix run github:Mic92/update-flake-inputs-gitea#update-flake-inputs -- \
           --gitea-url "${{ inputs.gitea-url }}" \
           --gitea-token "${{ inputs.gitea-token }}" \
