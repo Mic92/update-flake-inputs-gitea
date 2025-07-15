@@ -44,16 +44,16 @@ runs:
         fi
 
         # Prepend GitHub access token to NIX_CONFIG if provided
+        our_nix_config="extra-experimental-features = nix-command flakes"
         if [[ -n "${{ inputs.github-token }}" ]]; then
-          if [[ -n "${NIX_CONFIG:-}" ]]; then
-            export NIX_CONFIG="access-tokens = github.com=${{ inputs.github-token }} ${NIX_CONFIG}"
-          else
-            export NIX_CONFIG="access-tokens = github.com=${{ inputs.github-token }}"
-          fi
+          our_nix_config+="access-tokens = github.com=${{ inputs.github-token }}"
         fi
+        export NIX_CONFIG="${our_nix_config}${NIX_CONFIG:+ $NIX_CONFIG}"
 
         set -x
-        nix run github:Mic92/update-flake-inputs-gitea#update-flake-inputs -- \
+
+        nix \
+          "${GITHUB_ACTION_PATH}#update-flake-inputs" -- \
           --gitea-url "${{ inputs.gitea-url }}" \
           --gitea-token "${{ inputs.gitea-token }}" \
           --gitea-repository "${{ inputs.gitea-repository }}" \
