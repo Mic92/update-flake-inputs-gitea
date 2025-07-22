@@ -44,9 +44,7 @@ class TestFlakeService:
         assert len(flakes) >= min_expected_flakes
 
         # Find the simple flake
-        simple_flake = next(
-            (f for f in flakes if f.file_path == "simple/flake.nix"), None
-        )
+        simple_flake = next((f for f in flakes if f.file_path == "simple/flake.nix"), None)
         assert simple_flake is not None
         assert "nixos-hardware" in simple_flake.inputs
         assert "flake-utils" in simple_flake.inputs
@@ -54,17 +52,13 @@ class TestFlakeService:
         assert len(simple_flake.inputs) == simple_flake_input_count
 
         # Find the root subflake
-        root_subflake = next(
-            (f for f in flakes if f.file_path == "subflake/flake.nix"), None
-        )
+        root_subflake = next((f for f in flakes if f.file_path == "subflake/flake.nix"), None)
         assert root_subflake is not None
         assert "flake-utils" in root_subflake.inputs
         assert len(root_subflake.inputs) == 1
 
         # Find the nested subflake
-        nested_subflake = next(
-            (f for f in flakes if f.file_path == "subflake/sub/flake.nix"), None
-        )
+        nested_subflake = next((f for f in flakes if f.file_path == "subflake/sub/flake.nix"), None)
         assert nested_subflake is not None
         assert "flake-utils" in nested_subflake.inputs
         assert "nixos-hardware" in nested_subflake.inputs
@@ -72,23 +66,17 @@ class TestFlakeService:
         assert len(nested_subflake.inputs) == nested_subflake_input_count
 
         # Find the minimal flake
-        minimal_flake = next(
-            (f for f in flakes if f.file_path == "minimal/flake.nix"), None
-        )
+        minimal_flake = next((f for f in flakes if f.file_path == "minimal/flake.nix"), None)
         assert minimal_flake is not None
         assert "flake-utils" in minimal_flake.inputs
         assert len(minimal_flake.inputs) == 1
 
         # Verify that flakes without lock files are skipped
-        no_lock_flake = next(
-            (f for f in flakes if f.file_path == "no-lock/flake.nix"), None
-        )
+        no_lock_flake = next((f for f in flakes if f.file_path == "no-lock/flake.nix"), None)
         assert no_lock_flake is None
 
         # Verify that flakes with local inputs are skipped
-        local_flake = next(
-            (f for f in flakes if f.file_path == "local-flake-repo/flake.nix"), None
-        )
+        local_flake = next((f for f in flakes if f.file_path == "local-flake-repo/flake.nix"), None)
         assert local_flake is None
 
     def test_discover_flake_files_with_exclude_patterns(
@@ -108,9 +96,7 @@ class TestFlakeService:
         assert len(subflake_files) == 0
 
         # Should still include simple/flake.nix
-        simple_flake = next(
-            (f for f in flakes if f.file_path == "simple/flake.nix"), None
-        )
+        simple_flake = next((f for f in flakes if f.file_path == "simple/flake.nix"), None)
         assert simple_flake is not None
 
     def test_discover_flake_files_with_input_excludes(
@@ -134,15 +120,11 @@ class TestFlakeService:
             assert "flake-utils" not in flake.inputs
 
         # Other inputs should still be present
-        simple_flake = next(
-            (f for f in flakes if f.file_path == "simple/flake.nix"), None
-        )
+        simple_flake = next((f for f in flakes if f.file_path == "simple/flake.nix"), None)
         assert simple_flake is not None
         assert "nixos-hardware" in simple_flake.inputs
 
-        nested_subflake = next(
-            (f for f in flakes if f.file_path == "subflake/sub/flake.nix"), None
-        )
+        nested_subflake = next((f for f in flakes if f.file_path == "subflake/sub/flake.nix"), None)
         assert nested_subflake is not None
         assert "nixos-hardware" in nested_subflake.inputs
 
@@ -161,15 +143,11 @@ class TestFlakeService:
         )
 
         # simple/flake.nix should be completely excluded
-        simple_flake = next(
-            (f for f in flakes if f.file_path == "simple/flake.nix"), None
-        )
+        simple_flake = next((f for f in flakes if f.file_path == "simple/flake.nix"), None)
         assert simple_flake is None
 
         # subflake/sub/flake.nix should exist but without nixos-hardware
-        nested_subflake = next(
-            (f for f in flakes if f.file_path == "subflake/sub/flake.nix"), None
-        )
+        nested_subflake = next((f for f in flakes if f.file_path == "subflake/sub/flake.nix"), None)
         assert nested_subflake is not None
         assert "flake-utils" in nested_subflake.inputs
         assert "nixos-hardware" not in nested_subflake.inputs
@@ -213,9 +191,7 @@ class TestFlakeService:
             # Get the original lock file content
             original_lock_content = (temp_path / "flake.lock").read_text()
             original_lock = json.loads(original_lock_content)
-            original_flake_utils_rev = original_lock["nodes"]["flake-utils"]["locked"][
-                "rev"
-            ]
+            original_flake_utils_rev = original_lock["nodes"]["flake-utils"]["locked"]["rev"]
 
             # Update flake-utils input
             flake_service.update_flake_input("flake-utils", "flake.nix", str(temp_path))
@@ -230,17 +206,12 @@ class TestFlakeService:
             # The flake-utils input should still exist
             assert "flake-utils" in updated_lock["nodes"]
             assert updated_lock["nodes"]["flake-utils"]["locked"]["owner"] == "numtide"
-            assert (
-                updated_lock["nodes"]["flake-utils"]["locked"]["repo"] == "flake-utils"
-            )
+            assert updated_lock["nodes"]["flake-utils"]["locked"]["repo"] == "flake-utils"
             assert "rev" in updated_lock["nodes"]["flake-utils"]["locked"]
             assert "narHash" in updated_lock["nodes"]["flake-utils"]["locked"]
 
             # The revision should have changed from our old one
-            assert (
-                updated_lock["nodes"]["flake-utils"]["locked"]["rev"]
-                != original_flake_utils_rev
-            )
+            assert updated_lock["nodes"]["flake-utils"]["locked"]["rev"] != original_flake_utils_rev
 
     def test_update_nonexistent_input(
         self,
@@ -290,6 +261,5 @@ class TestFlakeService:
 
             # Check that a warning was logged
             assert any(
-                "Failed to update input nonexistent" in record.message
-                for record in caplog.records
+                "Failed to update input nonexistent" in record.message for record in caplog.records
             )
