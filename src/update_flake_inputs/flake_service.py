@@ -42,9 +42,7 @@ class FlakeService:
             all_flake_files = [
                 f
                 for f in all_flake_files
-                if not any(
-                    part in f.parts for part in ["node_modules", ".git", "__pycache__"]
-                )
+                if not any(part in f.parts for part in ["node_modules", ".git", "__pycache__"])
             ]
 
             exclude_list = (
@@ -173,10 +171,7 @@ class FlakeService:
             logger.info("Updating flake input: %s in %s", input_name, flake_file)
 
             # If work_dir is provided, resolve the flake file relative to it
-            if work_dir:
-                absolute_flake_path = Path(work_dir) / flake_file
-            else:
-                absolute_flake_path = Path(flake_file)
+            absolute_flake_path = Path(work_dir) / flake_file if work_dir else Path(flake_file)
 
             flake_dir = absolute_flake_path.parent or Path()
 

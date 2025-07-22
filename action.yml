@@ -31,6 +31,22 @@ inputs:
     description: 'GitHub token for avoiding rate limits when fetching flake inputs'
     required: false
     default: ''
+  git-author-name:
+    description: 'Git author name for commits'
+    required: false
+    default: 'gitea-actions[bot]'
+  git-author-email:
+    description: 'Git author email for commits'
+    required: false
+    default: 'gitea-actions[bot]@noreply.gitea.io'
+  git-committer-name:
+    description: 'Git committer name for commits'
+    required: false
+    default: 'gitea-actions[bot]'
+  git-committer-email:
+    description: 'Git committer email for commits'
+    required: false
+    default: 'gitea-actions[bot]@noreply.gitea.io'
 
 runs:
   using: 'composite'
@@ -61,4 +77,8 @@ runs:
           --gitea-repository "${{ inputs.gitea-repository }}" \
           --exclude-patterns "${{ inputs.exclude-patterns }}" \
           --base-branch "${{ inputs.base-branch }}" \
+          --git-author-name "${{ inputs.git-author-name }}" \
+          --git-author-email "${{ inputs.git-author-email }}" \
+          --git-committer-name "${{ inputs.git-committer-name }}" \
+          --git-committer-email "${{ inputs.git-committer-email }}" \
           $AUTO_MERGE_FLAG

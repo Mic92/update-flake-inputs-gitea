@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
@@ -12,15 +13,21 @@ from update_flake_inputs.flake_service import FlakeService
 from update_flake_inputs.gitea_service import GiteaService
 
 
-class TestGiteaService(GiteaService):
-    def __init__(self) -> None:
-        """Initialize test service without API credentials."""
-        self.api_url = "https://gitea.example.com"
-        self.token = "test-token"  # noqa: S105
-        self.owner = "test-owner"
-        self.repo = "test-repo"
-        self.pr_creation_attempts: list[dict[str, str]] = []
-        # Skip token validation in tests
+@dataclass
+class MockGiteaService(GiteaService):
+    """Mock version of GiteaService that skips API calls."""
+
+    # Override defaults for test
+    api_url: str = "https://gitea.example.com"
+    token: str = "test-token"  # noqa: S105
+    owner: str = "test-owner"
+    repo: str = "test-repo"
+    pr_creation_attempts: list[dict[str, str]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        """Skip token validation in tests."""
+        # Clean up the API URL but skip validation
+        self.api_url = self.api_url.rstrip("/")
 
     def _validate_token(self) -> None:
         """Skip token validation in tests."""
@@ -114,7 +121,7 @@ class TestProcessFlakeUpdates:
         try:
             # Create test services
             flake_service = FlakeService()
-            test_gitea_service = TestGiteaService()
+            test_gitea_service = MockGiteaService()
 
             # Set log level for capturing
             caplog.set_level("INFO")
@@ -224,7 +231,7 @@ class TestProcessFlakeUpdates:
         try:
             # Create test services
             flake_service = FlakeService()
-            test_gitea_service = TestGiteaService()
+            test_gitea_service = MockGiteaService()
 
             # Process updates
             process_flake_updates(
@@ -267,6 +274,104 @@ class TestProcessFlakeUpdates:
             assert len(commits) == expected_commits
             assert "Update flake-utils" in commits[0]
             assert "Initial commit" in commits[1]
+
+        finally:
+            os.chdir(original_cwd)
+
+    def test_custom_git_author_committer(
+        self,
+        tmp_path: Path,
+        fixtures_path: Path,
+    ) -> None:
+        """Test that custom git author/committer configuration is used."""
+        # Create a flake with flake-utils
+        flake_content = """{
+  inputs = {
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, flake-utils }: {
+    # Test flake
+  };
+}"""
+
+        (tmp_path / "flake.nix").write_text(flake_content)
+
+        # Copy old lock file from minimal fixture
+        shutil.copy(
+            fixtures_path / "minimal" / "flake.lock",
+            tmp_path / "flake.lock",
+        )
+
+        # Initialize git repo
+        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
+        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit"],
+            cwd=tmp_path,
+            check=True,
+            env={
+                **os.environ,
+                "GIT_AUTHOR_NAME": "Test User",
+                "GIT_AUTHOR_EMAIL": "test@example.com",
+                "GIT_COMMITTER_NAME": "Test User",
+                "GIT_COMMITTER_EMAIL": "test@example.com",
+            },
+        )
+
+        # Add remote
+        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
+        remote_dir.mkdir()
+        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
+        subprocess.run(
+            ["git", "remote", "add", "origin", str(remote_dir)],
+            cwd=tmp_path,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "push", "-u", "origin", "main"],
+            cwd=tmp_path,
+            check=True,
+        )
+
+        # Change to test directory
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            # Create test services with custom git author/committer
+            flake_service = FlakeService()
+            test_gitea_service = MockGiteaService()
+            test_gitea_service.git_author_name = "Custom Bot"
+            test_gitea_service.git_author_email = "custom@bot.com"
+            test_gitea_service.git_committer_name = "Custom Committer"
+            test_gitea_service.git_committer_email = "committer@bot.com"
+
+            # Process updates
+            process_flake_updates(
+                flake_service,
+                test_gitea_service,
+                "",
+                "main",
+                auto_merge=False,
+            )
+
+            # Verify the commit was made with custom author/committer
+            result = subprocess.run(
+                ["git", "log", "-1", "--format=%an <%ae>", "update-flake-utils"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            assert result.stdout.strip() == "Custom Bot <custom@bot.com>"
+
+            result = subprocess.run(
+                ["git", "log", "-1", "--format=%cn <%ce>", "update-flake-utils"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            assert result.stdout.strip() == "Custom Committer <committer@bot.com>"
 
         finally:
             os.chdir(original_cwd)
