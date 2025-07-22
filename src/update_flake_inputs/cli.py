@@ -79,6 +79,36 @@ def parse_args() -> argparse.Namespace:
         help="Enable verbose logging",
     )
 
+    parser.add_argument(
+        "--git-author-name",
+        default=os.environ.get("GIT_AUTHOR_NAME", "gitea-actions[bot]"),
+        help="Git author name (defaults to GIT_AUTHOR_NAME env var or 'gitea-actions[bot]')",
+    )
+
+    parser.add_argument(
+        "--git-author-email",
+        default=os.environ.get("GIT_AUTHOR_EMAIL", "gitea-actions[bot]@noreply.gitea.io"),
+        help=(
+            "Git author email (defaults to GIT_AUTHOR_EMAIL env var "
+            "or 'gitea-actions[bot]@noreply.gitea.io')"
+        ),
+    )
+
+    parser.add_argument(
+        "--git-committer-name",
+        default=os.environ.get("GIT_COMMITTER_NAME", "gitea-actions[bot]"),
+        help="Git committer name (defaults to GIT_COMMITTER_NAME env var or 'gitea-actions[bot]')",
+    )
+
+    parser.add_argument(
+        "--git-committer-email",
+        default=os.environ.get("GIT_COMMITTER_EMAIL", "gitea-actions[bot]@noreply.gitea.io"),
+        help=(
+            "Git committer email (defaults to GIT_COMMITTER_EMAIL env var "
+            "or 'gitea-actions[bot]@noreply.gitea.io')"
+        ),
+    )
+
     return parser.parse_args()
 
 
@@ -102,8 +132,7 @@ def validate_args(args: argparse.Namespace) -> None:
 
     if not args.gitea_repository:
         logger.error(
-            "Gitea repository is required "
-            "(--gitea-repository or GITEA_REPOSITORY env var)"
+            "Gitea repository is required (--gitea-repository or GITEA_REPOSITORY env var)"
         )
         sys.exit(1)
 
@@ -227,10 +256,14 @@ def main() -> None:
         # Create services
         flake_service = FlakeService()
         gitea_service = GiteaService(
-            args.gitea_url,
-            args.gitea_token,
-            owner,
-            repo,
+            api_url=args.gitea_url,
+            token=args.gitea_token,
+            owner=owner,
+            repo=repo,
+            git_author_name=args.git_author_name,
+            git_author_email=args.git_author_email,
+            git_committer_name=args.git_committer_name,
+            git_committer_email=args.git_committer_email,
         )
 
         # Process updates

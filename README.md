@@ -47,6 +47,10 @@ jobs:
 | `base-branch` | Base branch to create PRs against | No | `main` |
 | `auto-merge` | Automatically merge PRs when checks succeed | No | `false` |
 | `github-token` | GitHub token for avoiding rate limits when fetching flake inputs | No | `''` |
+| `git-author-name` | Git author name for commits | No | `gitea-actions[bot]` |
+| `git-author-email` | Git author email for commits | No | `gitea-actions[bot]@noreply.gitea.io` |
+| `git-committer-name` | Git committer name for commits | No | `gitea-actions[bot]` |
+| `git-committer-email` | Git committer email for commits | No | `gitea-actions[bot]@noreply.gitea.io` |
 
 ### Advanced Example
 
@@ -87,6 +91,26 @@ When updating flake inputs that reference GitHub repositories, you may encounter
 ```
 
 This will configure Nix to use the token when fetching from GitHub, significantly increasing the rate limit.
+
+### Custom Git Author/Committer
+
+By default, commits are created with `gitea-actions[bot]` as the author. However, you may want to use a different author to:
+- Trigger specific Gitea workflows that filter on commit authors
+- Comply with organizational policies
+- Use a dedicated bot account for audit trails
+
+You can customize the git author and committer information:
+
+```yaml
+- name: Update flake inputs
+  uses: Mic92/update-flake-inputs-gitea@main
+  with:
+    gitea-token: ${{ secrets.GITEA_TOKEN }}
+    git-author-name: "My Bot"
+    git-author-email: "bot@mycompany.com"
+    git-committer-name: "My Bot"
+    git-committer-email: "bot@mycompany.com"
+```
 
 ## Development
 

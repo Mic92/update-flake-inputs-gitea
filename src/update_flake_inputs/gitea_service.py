@@ -45,23 +45,23 @@ class PullRequest:
     html_url: str
 
 
+@dataclass
 class GiteaService:
     """Service for interacting with Gitea repositories and API."""
 
-    def __init__(self, api_url: str, token: str, owner: str, repo: str) -> None:
-        """Initialize the Gitea service.
+    api_url: str
+    token: str
+    owner: str
+    repo: str
+    git_author_name: str = "gitea-actions[bot]"
+    git_author_email: str = "gitea-actions[bot]@noreply.gitea.io"
+    git_committer_name: str = "gitea-actions[bot]"
+    git_committer_email: str = "gitea-actions[bot]@noreply.gitea.io"
 
-        Args:
-            api_url: Base URL for the Gitea API
-            token: Authentication token
-            owner: Repository owner
-            repo: Repository name
-
-        """
-        self.api_url = api_url.rstrip("/")
-        self.token = token
-        self.owner = owner
-        self.repo = repo
+    def __post_init__(self) -> None:
+        """Post-initialization processing."""
+        # Clean up the API URL
+        self.api_url = self.api_url.rstrip("/")
 
         # Validate token and log authenticated user
         self._validate_token()
@@ -248,10 +248,10 @@ class GiteaService:
         env = os.environ.copy()
         env.update(
             {
-                "GIT_AUTHOR_NAME": "gitea-actions[bot]",
-                "GIT_AUTHOR_EMAIL": "gitea-actions[bot]@noreply.gitea.io",
-                "GIT_COMMITTER_NAME": "gitea-actions[bot]",
-                "GIT_COMMITTER_EMAIL": "gitea-actions[bot]@noreply.gitea.io",
+                "GIT_AUTHOR_NAME": self.git_author_name,
+                "GIT_AUTHOR_EMAIL": self.git_author_email,
+                "GIT_COMMITTER_NAME": self.git_committer_name,
+                "GIT_COMMITTER_EMAIL": self.git_committer_email,
             }
         )
 
