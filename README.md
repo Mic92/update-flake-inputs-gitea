@@ -12,6 +12,12 @@ A Gitea Action that automatically updates Nix flake inputs and creates pull requ
 - Auto-merge capability for PRs when checks succeed
 - GitHub token support to avoid rate limits
 
+## Requirements
+
+This action requires Nix to be installed on the runner. The action uses `nix run` to execute the flake update logic.
+
+For Gitea Actions runners, you need to install Nix as a separate step before using this action. See the usage example below.
+
 ## Usage
 
 Add this action to your Gitea repository workflows:
@@ -29,6 +35,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+
+    # optionally when nix is not installed
+    # - name: Install Nix
+    #   run: |
+    #     sh <(curl -L https://nixos.org/nix/install) --daemon --yes
+    #     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 
     - name: Update flake inputs
       uses: Mic92/update-flake-inputs-gitea@main
