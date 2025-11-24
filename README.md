@@ -15,8 +15,7 @@ A Gitea Action that automatically updates Nix flake inputs and creates pull requ
 ## Requirements
 
 This action requires Nix to be installed on the runner. The action uses `nix run` to execute the flake update logic.
-
-For Gitea Actions runners, you need to install Nix as a separate step before using this action. See the usage example below.
+If you have your gitea runner on nixos, you may use this [nixos-module](https://git.clan.lol/clan/clan-infra/src/commit/53a15c0aa8f3d8f4dc1386f92f1dd49255b90bfc/modules/web01/gitea/actions-runner.nix).
 
 ## Usage
 
@@ -35,12 +34,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
-    # optionally when nix is not installed
-    # - name: Install Nix
-    #   run: |
-    #     sh <(curl -L https://nixos.org/nix/install) --daemon --yes
-    #     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 
     - name: Update flake inputs
       uses: Mic92/update-flake-inputs-gitea@main
