@@ -199,7 +199,17 @@ class FlakeService:
                 flake_file,
             )
         except subprocess.CalledProcessError as e:
-            msg = f"Failed to update flake input {input_name} in {flake_file}: {e}"
+            stderr_output = e.stderr.strip() if e.stderr else "No stderr output"
+            stdout_output = e.stdout.strip() if e.stdout else "No stdout output"
+            logger.error(
+                "Failed to update flake input %s in %s. Exit code: %d\nStdout: %s\nStderr: %s",
+                input_name,
+                flake_file,
+                e.returncode,
+                stdout_output,
+                stderr_output,
+            )
+            msg = f"Failed to update flake input {input_name} in {flake_file}: {e}\nStderr: {stderr_output}"
             raise FlakeServiceError(msg) from e
         except Exception as e:
             msg = f"Failed to update flake input {input_name} in {flake_file}: {e}"
