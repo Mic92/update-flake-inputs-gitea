@@ -174,10 +174,20 @@ class FlakeService:
             absolute_flake_path = Path(work_dir) / flake_file if work_dir else Path(flake_file)
 
             flake_dir = absolute_flake_path.parent or Path()
+            absolute_flake_dir = flake_dir.resolve()
 
             # Use nix flake update to update specific input
+            # The shallow URL is needed because we may not have the full history
+            # of the git repository (e.g., when using shallow checkouts or worktrees)
             result = subprocess.run(
-                ["nix", "flake", "update", input_name],
+                [
+                    "nix",
+                    "flake",
+                    "update",
+                    "--flake",
+                    f"git+file://{absolute_flake_dir}?shallow=1",
+                    input_name,
+                ],
                 cwd=str(flake_dir),
                 capture_output=True,
                 text=True,
@@ -199,7 +209,20 @@ class FlakeService:
                 flake_file,
             )
         except subprocess.CalledProcessError as e:
-            msg = f"Failed to update flake input {input_name} in {flake_file}: {e}"
+            stderr_output = e.stderr.strip() if e.stderr else "No stderr output"
+            stdout_output = e.stdout.strip() if e.stdout else "No stdout output"
+            logger.exception(
+                "Failed to update flake input %s in %s. Exit code: %d\nStdout: %s\nStderr: %s",
+                input_name,
+                flake_file,
+                e.returncode,
+                stdout_output,
+                stderr_output,
+            )
+            msg = (
+                f"Failed to update flake input {input_name} in {flake_file}: {e}\n"
+                f"Stderr: {stderr_output}"
+            )
             raise FlakeServiceError(msg) from e
         except Exception as e:
             msg = f"Failed to update flake input {input_name} in {flake_file}: {e}"
