@@ -23,6 +23,10 @@ inputs:
     description: 'Base branch to create PRs against'
     required: false
     default: 'main'
+  branch-suffix:
+    description: 'Suffix to append to update branches'
+    required: false
+    default: ''
   auto-merge:
     description: 'Automatically merge PRs when checks succeed'
     required: false
@@ -77,6 +81,7 @@ runs:
           --gitea-repository "${{ inputs.gitea-repository }}" \
           --exclude-patterns "${{ inputs.exclude-patterns }}" \
           --base-branch "${{ inputs.base-branch }}" \
+          --branch-suffix "${{ inputs.branch-suffix }}" \
           --git-author-name "${{ inputs.git-author-name }}" \
           --git-author-email "${{ inputs.git-author-email }}" \
           --git-committer-name "${{ inputs.git-committer-name }}" \
