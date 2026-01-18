@@ -67,6 +67,12 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--branch-suffix",
+        default=os.environ.get("BRANCH_SUFFIX", ""),
+        help="Optional suffix to append to update branches (default: empty)",
+    )
+
+    parser.add_argument(
         "--auto-merge",
         action="store_true",
         help="Automatically merge PRs when checks succeed",
@@ -144,11 +150,12 @@ def validate_args(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
-def process_flake_updates(
+def process_flake_updates(  # noqa: PLR0913
     flake_service: FlakeService,
     gitea_service: GiteaService,
     exclude_patterns: str,
     base_branch: str,
+    branch_suffix: str,
     *,
     auto_merge: bool,
 ) -> None:
@@ -159,6 +166,7 @@ def process_flake_updates(
         gitea_service: Gitea service instance
         exclude_patterns: Patterns to exclude
         base_branch: Base branch for PRs
+        branch_suffix: Optional suffix to append to branch names
         auto_merge: Whether to automatically merge PRs
 
     """
@@ -185,6 +193,9 @@ def process_flake_updates(
                 else:
                     branch_name = f"update-{parent_path}-{input_name}"
                 branch_name = branch_name.replace("/", "-").strip("-")
+                suffix = branch_suffix.strip().replace("/", "-").strip("-")
+                if suffix:
+                    branch_name = f"{branch_name}-{suffix}"
 
                 logger.info(
                     "Updating input %s in %s (branch: %s)",
@@ -272,6 +283,7 @@ def main() -> None:
             gitea_service,
             args.exclude_patterns,
             args.base_branch,
+            args.branch_suffix,
             auto_merge=args.auto_merge,
         )
 

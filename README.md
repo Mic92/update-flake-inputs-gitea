@@ -50,6 +50,7 @@ jobs:
 | `gitea-repository` | Repository in format owner/repo | No | `${{ gitea.repository }}` |
 | `exclude-patterns` | Comma-separated list of glob patterns to exclude flake.nix files | No | `''` |
 | `base-branch` | Base branch to create PRs against | No | `main` |
+| `branch-suffix` | Suffix to append to update branches | No | `''` |
 | `auto-merge` | Automatically merge PRs when checks succeed | No | `false` |
 | `github-token` | GitHub token for avoiding rate limits when fetching flake inputs | No | `''` |
 | `git-author-name` | Git author name for commits | No | `gitea-actions[bot]` |
