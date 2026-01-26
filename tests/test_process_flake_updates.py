@@ -132,6 +132,7 @@ class TestProcessFlakeUpdates:
                 test_gitea_service,
                 "",
                 "main",
+                "",
                 auto_merge=False,
             )
 
@@ -239,6 +240,7 @@ class TestProcessFlakeUpdates:
                 test_gitea_service,
                 "",
                 "main",
+                "",
                 auto_merge=False,
             )
 
@@ -353,6 +355,7 @@ class TestProcessFlakeUpdates:
                 test_gitea_service,
                 "",
                 "main",
+                "",
                 auto_merge=False,
             )
 
@@ -372,6 +375,104 @@ class TestProcessFlakeUpdates:
                 check=True,
             )
             assert result.stdout.strip() == "Custom Committer <committer@bot.com>"
+
+        finally:
+            os.chdir(original_cwd)
+
+    def test_branch_suffix(
+        self,
+        tmp_path: Path,
+        fixtures_path: Path,
+    ) -> None:
+        """Test that branch suffix is properly appended to branch names."""
+        # Create a flake with flake-utils
+        flake_content = """{
+  inputs = {
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, flake-utils }: {
+    # Test flake
+  };
+}"""
+
+        (tmp_path / "flake.nix").write_text(flake_content)
+
+        # Copy old lock file from minimal fixture
+        shutil.copy(
+            fixtures_path / "minimal" / "flake.lock",
+            tmp_path / "flake.lock",
+        )
+
+        # Initialize git repo
+        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
+        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit"],
+            cwd=tmp_path,
+            check=True,
+            env={
+                **os.environ,
+                "GIT_AUTHOR_NAME": "Test User",
+                "GIT_AUTHOR_EMAIL": "test@example.com",
+                "GIT_COMMITTER_NAME": "Test User",
+                "GIT_COMMITTER_EMAIL": "test@example.com",
+            },
+        )
+
+        # Add remote
+        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
+        remote_dir.mkdir()
+        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
+        subprocess.run(
+            ["git", "remote", "add", "origin", str(remote_dir)],
+            cwd=tmp_path,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "push", "-u", "origin", "main"],
+            cwd=tmp_path,
+            check=True,
+        )
+
+        # Change to test directory
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            # Create test services
+            flake_service = FlakeService()
+            test_gitea_service = MockGiteaService()
+
+            # Process updates with branch suffix
+            process_flake_updates(
+                flake_service,
+                test_gitea_service,
+                "",
+                "main",
+                "my-suffix",
+                auto_merge=False,
+            )
+
+            # Verify pull request was created with suffix
+            assert len(test_gitea_service.pr_creation_attempts) == 1
+
+            pr_attempt = test_gitea_service.pr_creation_attempts[0]
+            assert pr_attempt["branch_name"] == "update-flake-utils-my-suffix"
+            assert pr_attempt["base_branch"] == "main"
+            assert pr_attempt["title"] == "Update flake-utils"
+
+            # Verify the branch exists with the suffix
+            result = subprocess.run(
+                ["git", "log", "--oneline", "update-flake-utils-my-suffix"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            commits = result.stdout.strip().split("\n")
+            expected_commits = 2
+            assert len(commits) == expected_commits
+            assert "Update flake-utils" in commits[0]
 
         finally:
             os.chdir(original_cwd)
