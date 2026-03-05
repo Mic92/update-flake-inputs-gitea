@@ -376,7 +376,7 @@ class GiteaService:
                 last_error = e
                 if attempt == max_retries - 1:
                     raise
-                logger.info("Merge request failed, retrying...")
+                logger.info("Merge request failed (%s), retrying...", e)
                 time.sleep(2)
                 continue
 
