@@ -307,9 +307,16 @@ class GiteaService:
         except APIError as e:
             if e.status_code == HTTP_CONFLICT:
                 logger.info("Pull request already exists for branch: %s", branch_name)
+                if auto_merge:
+                    pr_number = self._find_open_pull_request(base_branch, branch_name)
+                    if pr_number is not None:
+                        try:
+                            self._merge_pull_request(pr_number)
+                        except APIError:
+                            logger.exception("Failed to auto-merge pull request #%d", pr_number)
             else:
                 raise
-            return  # Exit early if PR creation failed
+            return
 
         # Auto-merge if requested and PR was created successfully
         if auto_merge:
@@ -318,6 +325,27 @@ class GiteaService:
             except APIError:
                 logger.exception("Failed to auto-merge pull request #%d", pr["number"])
                 # Don't re-raise - PR was created successfully
+
+    def _find_open_pull_request(self, base_branch: str, head_branch: str) -> int | None:
+        """Find an open pull request by base and head branch.
+
+        Args:
+            base_branch: The target branch
+            head_branch: The source branch
+
+        Returns:
+            PR number if found, None otherwise
+
+        """
+        endpoint = f"/repos/{self.owner}/{self.repo}/pulls?state=open&head={head_branch}"
+        try:
+            prs: list[dict[str, Any]] = self._make_request("GET", endpoint)
+            for pr in prs:
+                if pr["base"]["ref"] == base_branch and pr["head"]["ref"] == head_branch:
+                    return int(pr["number"])
+        except APIError:
+            logger.exception("Failed to find pull request for %s -> %s", head_branch, base_branch)
+        return None
 
     def _merge_pull_request(self, pr_number: int) -> None:
         """Merge a pull request when checks succeed.
