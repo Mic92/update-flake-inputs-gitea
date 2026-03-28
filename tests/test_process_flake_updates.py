@@ -425,6 +425,94 @@ class TestProcessFlakeUpdates:
             os.chdir(original_cwd)
 
     @pytest.mark.impure
+    def test_target_branch(
+        self,
+        tmp_path: Path,
+        fixtures_path: Path,
+    ) -> None:
+        """Test that PRs target the target branch when different from base branch."""
+        # Create a flake with flake-utils
+        flake_content = """{
+  inputs = {
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, flake-utils }: {
+    # Test flake
+  };
+}"""
+
+        (tmp_path / "flake.nix").write_text(flake_content)
+
+        # Copy old lock file from minimal fixture
+        shutil.copy(
+            fixtures_path / "minimal" / "flake.lock",
+            tmp_path / "flake.lock",
+        )
+
+        # Initialize git repo
+        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
+        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit"],
+            cwd=tmp_path,
+            check=True,
+            env={
+                **os.environ,
+                "GIT_AUTHOR_NAME": "Test User",
+                "GIT_AUTHOR_EMAIL": "test@example.com",
+                "GIT_COMMITTER_NAME": "Test User",
+                "GIT_COMMITTER_EMAIL": "test@example.com",
+            },
+        )
+
+        # Add remote
+        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
+        remote_dir.mkdir()
+        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
+        subprocess.run(
+            ["git", "remote", "add", "origin", str(remote_dir)],
+            cwd=tmp_path,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "push", "-u", "origin", "main"],
+            cwd=tmp_path,
+            check=True,
+        )
+
+        # Change to test directory
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            # Create test services
+            flake_service = FlakeService()
+            test_gitea_service = MockGiteaService()
+
+            # Process updates with target_branch different from base_branch
+            process_flake_updates(
+                flake_service,
+                test_gitea_service,
+                "",
+                "main",
+                "",
+                auto_merge=False,
+                target_branch="next",
+            )
+
+            # Verify pull request targets the target branch, not the base branch
+            assert len(test_gitea_service.pr_creation_attempts) == 1
+
+            pr_attempt = test_gitea_service.pr_creation_attempts[0]
+            assert pr_attempt["branch_name"] == "update-flake-utils"
+            assert pr_attempt["base_branch"] == "next"
+            assert pr_attempt["title"] == "Update flake-utils"
+
+        finally:
+            os.chdir(original_cwd)
+
+    @pytest.mark.impure
     def test_branch_suffix(
         self,
         tmp_path: Path,
