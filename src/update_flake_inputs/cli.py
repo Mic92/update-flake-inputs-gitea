@@ -63,7 +63,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--base-branch",
         default="main",
-        help="Base branch to create PRs against (default: main)",
+        help="Branch to create updates on top of (default: main)",
+    )
+
+    parser.add_argument(
+        "--target-branch",
+        default=os.environ.get("TARGET_BRANCH", ""),
+        help="Target branch for PRs (defaults to base-branch if not set)",
     )
 
     parser.add_argument(
@@ -169,6 +175,7 @@ def process_flake_updates(  # noqa: PLR0913
     branch_suffix: str,
     *,
     auto_merge: bool,
+    target_branch: str = "",
 ) -> None:
     """Process all flake updates.
 
@@ -176,11 +183,13 @@ def process_flake_updates(  # noqa: PLR0913
         flake_service: Flake service instance
         gitea_service: Gitea service instance
         exclude_patterns: Patterns to exclude
-        base_branch: Base branch for PRs
+        base_branch: Branch to create updates on top of
+        target_branch: Target branch for PRs (defaults to base_branch)
         branch_suffix: Optional suffix to append to branch names
         auto_merge: Whether to automatically merge PRs
 
     """
+    pr_target = target_branch or base_branch
     # Discover flake files
     flakes = flake_service.discover_flake_files(exclude_patterns)
     if not flakes:
@@ -242,7 +251,7 @@ def process_flake_updates(  # noqa: PLR0913
                         )
                         gitea_service.create_pull_request(
                             branch_name,
-                            base_branch,
+                            pr_target,
                             pr_title,
                             pr_body,
                             auto_merge=auto_merge,
@@ -300,6 +309,7 @@ def main() -> None:
             args.base_branch,
             args.branch_suffix,
             auto_merge=args.auto_merge,
+            target_branch=args.target_branch,
         )
 
         logger.info("Completed processing all flake updates")

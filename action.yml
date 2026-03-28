@@ -19,9 +19,13 @@ inputs:
     required: false
     default: ''
   base-branch:
-    description: 'Base branch to create PRs against'
+    description: 'Branch to create updates on top of'
     required: false
     default: 'main'
+  target-branch:
+    description: 'Target branch for PRs (defaults to base-branch if not set)'
+    required: false
+    default: ''
   branch-suffix:
     description: 'Suffix to append to update branches'
     required: false
@@ -86,6 +90,7 @@ runs:
           --gitea-repository "${{ inputs.gitea-repository }}" \
           --exclude-patterns "${{ inputs.exclude-patterns }}" \
           --base-branch "${{ inputs.base-branch }}" \
+          --target-branch "${{ inputs.target-branch }}" \
           --branch-suffix "${{ inputs.branch-suffix }}" \
           --git-author-name "${{ inputs.git-author-name }}" \
           --git-author-email "${{ inputs.git-author-email }}" \
