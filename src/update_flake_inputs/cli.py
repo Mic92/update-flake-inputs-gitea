@@ -178,6 +178,8 @@ def process_flake_updates(  # noqa: PLR0913
 
     logger.info("Found %d flake files to process", len(flakes))
 
+    failed_inputs: list[tuple[str, str]] = []
+
     # Process each flake
     for flake in flakes:
         logger.info("Processing flake: %s", flake.file_path)
@@ -251,7 +253,12 @@ def process_flake_updates(  # noqa: PLR0913
                     input_name,
                     flake.file_path,
                 )
-                # Continue with next input
+                failed_inputs.append((input_name, flake.file_path))
+
+    if failed_inputs:
+        summary = ", ".join(f"{name} in {path}" for name, path in failed_inputs)
+        msg = f"Failed to update {len(failed_inputs)} input(s): {summary}"
+        raise UpdateFlakeInputsError(msg)
 
 
 def main() -> None:
