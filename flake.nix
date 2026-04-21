@@ -31,6 +31,45 @@
             inherit (config.packages) update-flake-inputs;
           };
 
+          checks.pytest =
+            let
+              python = pkgs.python313;
+              pythonEnv = python.withPackages (
+                ps: with ps; [
+                  config.packages.update-flake-inputs
+                  pytest
+                ]
+              );
+            in
+            pkgs.runCommand "pytest"
+              {
+                nativeBuildInputs = [
+                  pythonEnv
+                  pkgs.git
+                  pkgs.nix
+                ];
+              }
+              ''
+                cp -r ${./.} ./src
+                chmod +w -R ./src
+                cd ./src
+
+                export HOME=$TMPDIR
+                export NIX_STATE_DIR=$TMPDIR/nix
+                export NIX_CONF_DIR=$TMPDIR/etc
+                mkdir -p "$NIX_CONF_DIR"
+                echo "experimental-features = nix-command flakes" > "$NIX_CONF_DIR/nix.conf"
+
+                export GIT_AUTHOR_NAME="Test User"
+                export GIT_AUTHOR_EMAIL="test@example.com"
+                export GIT_COMMITTER_NAME="Test User"
+                export GIT_COMMITTER_EMAIL="test@example.com"
+
+                python -m pytest -m "not impure" tests/
+
+                touch $out
+              '';
+
           treefmt = {
             projectRootFile = "flake.nix";
             programs = {
