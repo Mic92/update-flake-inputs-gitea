@@ -176,7 +176,8 @@ class GiteaService:
 
         try:
             with urllib.request.urlopen(request) as response:  # noqa: S310
-                return json.loads(response.read().decode("utf-8"))
+                body = response.read().decode("utf-8")
+                return json.loads(body) if body else {}
         except urllib.error.HTTPError as e:
             error_body = e.read().decode("utf-8")
             msg = f"API request failed: {e.code} {e.reason} - {error_body}"
