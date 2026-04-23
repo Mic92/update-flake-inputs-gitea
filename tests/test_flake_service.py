@@ -152,6 +152,7 @@ class TestFlakeService:
         assert "flake-utils" in nested_subflake.inputs
         assert "nixos-hardware" not in nested_subflake.inputs
 
+    @pytest.mark.impure
     def test_update_flake_input(
         self,
         flake_service: FlakeService,

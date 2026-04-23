@@ -169,6 +169,7 @@ class TestProcessFlakeUpdates:
         finally:
             os.chdir(original_cwd)
 
+    @pytest.mark.impure
     def test_with_updatable_flake_input(
         self,
         tmp_path: Path,
@@ -280,6 +281,7 @@ class TestProcessFlakeUpdates:
         finally:
             os.chdir(original_cwd)
 
+    @pytest.mark.impure
     def test_custom_git_author_committer(
         self,
         tmp_path: Path,
@@ -379,6 +381,7 @@ class TestProcessFlakeUpdates:
         finally:
             os.chdir(original_cwd)
 
+    @pytest.mark.impure
     def test_branch_suffix(
         self,
         tmp_path: Path,

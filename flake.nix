@@ -23,6 +23,54 @@
 
       perSystem =
         { config, pkgs, ... }:
+        let
+          python = pkgs.python313;
+          pythonEnv = python.withPackages (
+            ps: with ps; [
+              config.packages.update-flake-inputs
+              pytest
+            ]
+          );
+
+          mkPytestCheck =
+            {
+              impure ? false,
+            }:
+            pkgs.runCommand "pytest${pkgs.lib.optionalString impure "-impure"}"
+              (
+                {
+                  nativeBuildInputs = [
+                    pythonEnv
+                    pkgs.git
+                    pkgs.nix
+                  ]
+                  ++ pkgs.lib.optionals impure [ pkgs.cacert ];
+                }
+                // pkgs.lib.optionalAttrs impure { __impure = true; }
+              )
+              ''
+                cp -r ${./.} ./src
+                chmod +w -R ./src
+                cd ./src
+
+                export HOME=$TMPDIR
+                export NIX_STATE_DIR=$TMPDIR/nix
+                export NIX_CONF_DIR=$TMPDIR/etc
+                mkdir -p "$NIX_CONF_DIR"
+                echo "experimental-features = nix-command flakes" > "$NIX_CONF_DIR/nix.conf"
+
+                export GIT_AUTHOR_NAME="Test User"
+                export GIT_AUTHOR_EMAIL="test@example.com"
+                export GIT_COMMITTER_NAME="Test User"
+                export GIT_COMMITTER_EMAIL="test@example.com"
+
+                ${pkgs.lib.optionalString impure "export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"}
+
+                python -m pytest ${pkgs.lib.optionalString (!impure) "-m 'not impure'"} tests/
+
+                touch $out
+              '';
+        in
         {
           packages.update-flake-inputs = pkgs.callPackage ./package.nix { };
           packages.default = config.packages.update-flake-inputs;
@@ -30,6 +78,9 @@
           devShells.default = pkgs.callPackage ./shell.nix {
             inherit (config.packages) update-flake-inputs;
           };
+
+          checks.pytest = mkPytestCheck { };
+          checks.pytest-impure = mkPytestCheck { impure = true; };
 
           treefmt = {
             projectRootFile = "flake.nix";

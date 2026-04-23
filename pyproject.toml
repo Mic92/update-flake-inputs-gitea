@@ -63,6 +63,7 @@ strict_equality = true
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q --strict-markers --strict-config"
+markers = ["impure: tests that require network access"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 python_files = "test_*.py"
