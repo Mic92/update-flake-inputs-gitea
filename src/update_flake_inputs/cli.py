@@ -185,17 +185,17 @@ def process_flake_updates(  # noqa: PLR0913
         logger.info("Processing flake: %s", flake.file_path)
         logger.info("Inputs to update: %s", ", ".join(flake.inputs))
 
+        # Don't include '.' for root directory
+        parent_path = Path(flake.file_path).parent
+        parent_suffix = "" if parent_path == Path() else f" in {parent_path}"
+        parent_branch = "" if parent_path == Path() else f"-{parent_path}"
+        suffix = branch_suffix.strip().replace("/", "-").strip("-")
+
         # Update each input
         for input_name in flake.inputs:
             try:
-                # Generate branch name - don't include '.' for root directory
-                parent_path = Path(flake.file_path).parent
-                if parent_path == Path():
-                    branch_name = f"update-{input_name}"
-                else:
-                    branch_name = f"update-{parent_path}-{input_name}"
+                branch_name = f"update{parent_branch}-{input_name}"
                 branch_name = branch_name.replace("/", "-").strip("-")
-                suffix = branch_suffix.strip().replace("/", "-").strip("-")
                 if suffix:
                     branch_name = f"{branch_name}-{suffix}"
 
@@ -216,11 +216,7 @@ def process_flake_updates(  # noqa: PLR0913
                     )
 
                     # Commit changes
-                    parent_path = Path(flake.file_path).parent
-                    if parent_path == Path():
-                        commit_message = f"Update {input_name}"
-                    else:
-                        commit_message = f"Update {input_name} in {parent_path}"
+                    commit_message = f"Update {input_name}{parent_suffix}"
                     if gitea_service.commit_changes(
                         branch_name,
                         commit_message,
