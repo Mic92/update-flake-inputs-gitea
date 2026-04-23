@@ -261,6 +261,95 @@ class TestProcessFlakeUpdates:
             os.chdir(original_cwd)
 
     @pytest.mark.impure
+    def test_worktree_based_on_base_branch_not_head(
+        self,
+        tmp_path: Path,
+        fixtures_path: Path,
+    ) -> None:
+        """Test that update branches are based on base_branch, not current HEAD.
+
+        When the action is triggered from a non-main branch, the worktree
+        should still be based on origin/<base_branch> so that commits from
+        the triggering branch don't leak into the update branch.
+        """
+        flake_content = """{
+  inputs = {
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, flake-utils }: {
+    # Test flake with updatable input
+  };
+}"""
+
+        (tmp_path / "flake.nix").write_text(flake_content)
+
+        shutil.copy(
+            fixtures_path / "minimal" / "flake.lock",
+            tmp_path / "flake.lock",
+        )
+
+        _setup_git_repo(tmp_path)
+
+        # Create a feature branch with an extra commit
+        git_env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "Test User",
+            "GIT_AUTHOR_EMAIL": "test@example.com",
+            "GIT_COMMITTER_NAME": "Test User",
+            "GIT_COMMITTER_EMAIL": "test@example.com",
+        }
+        subprocess.run(
+            ["git", "checkout", "-b", "feature-branch"],
+            cwd=tmp_path,
+            check=True,
+        )
+        (tmp_path / "extra-file.txt").write_text("feature branch content")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Feature branch commit"],
+            cwd=tmp_path,
+            check=True,
+            env=git_env,
+        )
+
+        # Stay on feature-branch (simulating action triggered from non-main branch)
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            flake_service = FlakeService()
+            test_gitea_service = MockGiteaService()
+
+            process_flake_updates(
+                flake_service,
+                test_gitea_service,
+                "",
+                "main",
+                "",
+                auto_merge=False,
+            )
+
+            # Verify PR was created
+            assert len(test_gitea_service.pr_creation_attempts) == 1
+
+            # Verify the update branch does NOT contain the feature branch commit
+            result = subprocess.run(
+                ["git", "log", "--oneline", "update-flake-utils"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            commits = result.stdout.strip().split("\n")
+            expected_commits = 2
+            assert len(commits) == expected_commits
+            assert "Update flake-utils" in commits[0]
+            assert "Initial commit" in commits[1]
+
+        finally:
+            os.chdir(original_cwd)
+
+    @pytest.mark.impure
     def test_custom_git_author_committer(
         self,
         tmp_path: Path,
