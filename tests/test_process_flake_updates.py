@@ -9,8 +9,45 @@ from pathlib import Path
 import pytest
 
 from update_flake_inputs.cli import process_flake_updates
-from update_flake_inputs.flake_service import FlakeService
+from update_flake_inputs.exceptions import FlakeServiceError, UpdateFlakeInputsError
+from update_flake_inputs.flake_service import Flake, FlakeService
 from update_flake_inputs.gitea_service import GiteaService
+
+
+def _setup_git_repo(tmp_path: Path) -> None:
+    """Initialize a git repo in tmp_path with a bare remote called origin.
+
+    Assumes the caller has already written the files to commit.
+    """
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "Test User",
+        "GIT_AUTHOR_EMAIL": "test@example.com",
+        "GIT_COMMITTER_NAME": "Test User",
+        "GIT_COMMITTER_EMAIL": "test@example.com",
+    }
+    subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial commit"],
+        cwd=tmp_path,
+        check=True,
+        env=env,
+    )
+
+    remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
+    remote_dir.mkdir()
+    subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
+    subprocess.run(
+        ["git", "remote", "add", "origin", str(remote_dir)],
+        cwd=tmp_path,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "push", "-u", "origin", "main"],
+        cwd=tmp_path,
+        check=True,
+    )
 
 
 @dataclass
@@ -83,36 +120,7 @@ class TestProcessFlakeUpdates:
         # Generate lock file
         subprocess.run(["nix", "flake", "lock"], cwd=tmp_path, check=True)
 
-        # Initialize git repo
-        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"],
-            cwd=tmp_path,
-            check=True,
-            env={
-                **os.environ,
-                "GIT_AUTHOR_NAME": "Test User",
-                "GIT_AUTHOR_EMAIL": "test@example.com",
-                "GIT_COMMITTER_NAME": "Test User",
-                "GIT_COMMITTER_EMAIL": "test@example.com",
-            },
-        )
-
-        # Add remote
-        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
-        remote_dir.mkdir()
-        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
-        subprocess.run(
-            ["git", "remote", "add", "origin", str(remote_dir)],
-            cwd=tmp_path,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "push", "-u", "origin", "main"],
-            cwd=tmp_path,
-            check=True,
-        )
+        _setup_git_repo(tmp_path)
 
         # Change to test directory
         original_cwd = Path.cwd()
@@ -195,36 +203,7 @@ class TestProcessFlakeUpdates:
             tmp_path / "flake.lock",
         )
 
-        # Initialize git repo
-        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"],
-            cwd=tmp_path,
-            check=True,
-            env={
-                **os.environ,
-                "GIT_AUTHOR_NAME": "Test User",
-                "GIT_AUTHOR_EMAIL": "test@example.com",
-                "GIT_COMMITTER_NAME": "Test User",
-                "GIT_COMMITTER_EMAIL": "test@example.com",
-            },
-        )
-
-        # Add remote
-        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
-        remote_dir.mkdir()
-        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
-        subprocess.run(
-            ["git", "remote", "add", "origin", str(remote_dir)],
-            cwd=tmp_path,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "push", "-u", "origin", "main"],
-            cwd=tmp_path,
-            check=True,
-        )
+        _setup_git_repo(tmp_path)
 
         # Change to test directory
         original_cwd = Path.cwd()
@@ -307,36 +286,7 @@ class TestProcessFlakeUpdates:
             tmp_path / "flake.lock",
         )
 
-        # Initialize git repo
-        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"],
-            cwd=tmp_path,
-            check=True,
-            env={
-                **os.environ,
-                "GIT_AUTHOR_NAME": "Test User",
-                "GIT_AUTHOR_EMAIL": "test@example.com",
-                "GIT_COMMITTER_NAME": "Test User",
-                "GIT_COMMITTER_EMAIL": "test@example.com",
-            },
-        )
-
-        # Add remote
-        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
-        remote_dir.mkdir()
-        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
-        subprocess.run(
-            ["git", "remote", "add", "origin", str(remote_dir)],
-            cwd=tmp_path,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "push", "-u", "origin", "main"],
-            cwd=tmp_path,
-            check=True,
-        )
+        _setup_git_repo(tmp_path)
 
         # Change to test directory
         original_cwd = Path.cwd()
@@ -407,36 +357,7 @@ class TestProcessFlakeUpdates:
             tmp_path / "flake.lock",
         )
 
-        # Initialize git repo
-        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"],
-            cwd=tmp_path,
-            check=True,
-            env={
-                **os.environ,
-                "GIT_AUTHOR_NAME": "Test User",
-                "GIT_AUTHOR_EMAIL": "test@example.com",
-                "GIT_COMMITTER_NAME": "Test User",
-                "GIT_COMMITTER_EMAIL": "test@example.com",
-            },
-        )
-
-        # Add remote
-        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
-        remote_dir.mkdir()
-        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
-        subprocess.run(
-            ["git", "remote", "add", "origin", str(remote_dir)],
-            cwd=tmp_path,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "push", "-u", "origin", "main"],
-            cwd=tmp_path,
-            check=True,
-        )
+        _setup_git_repo(tmp_path)
 
         # Change to test directory
         original_cwd = Path.cwd()
@@ -479,3 +400,80 @@ class TestProcessFlakeUpdates:
 
         finally:
             os.chdir(original_cwd)
+
+    @pytest.mark.impure
+    def test_fails_at_end_when_individual_input_fails(
+        self,
+        tmp_path: Path,
+        fixtures_path: Path,
+    ) -> None:
+        """Test that the action continues updating other inputs but fails at the end."""
+        flake_content = """{
+  inputs = {
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, flake-utils }: {
+    # Test flake with updatable input
+  };
+}"""
+
+        (tmp_path / "flake.nix").write_text(flake_content)
+
+        shutil.copy(
+            fixtures_path / "minimal" / "flake.lock",
+            tmp_path / "flake.lock",
+        )
+
+        _setup_git_repo(tmp_path)
+
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            # FailingFlakeService injects "bad-input" during discovery and
+            # raises when asked to update it, simulating a 403 or dead ref
+            flake_service = FailingFlakeService(fail_inputs=["bad-input"])
+            test_gitea_service = MockGiteaService()
+
+            with pytest.raises(UpdateFlakeInputsError, match="Failed to process 1 input"):
+                process_flake_updates(
+                    flake_service,
+                    test_gitea_service,
+                    "",
+                    "main",
+                    "",
+                    auto_merge=False,
+                )
+
+            # The successful input should still have gotten a PR
+            assert len(test_gitea_service.pr_creation_attempts) == 1
+            assert test_gitea_service.pr_creation_attempts[0]["branch_name"] == "update-flake-utils"
+
+        finally:
+            os.chdir(original_cwd)
+
+
+class FailingFlakeService(FlakeService):
+    """FlakeService that injects extra inputs during discovery and fails on them."""
+
+    def __init__(self, fail_inputs: list[str]) -> None:
+        """Initialize with the input names that should fail, in order."""
+        self.fail_inputs = fail_inputs
+
+    def discover_flake_files(self, exclude_patterns: str = "") -> list[Flake]:  # noqa: D102
+        flakes = super().discover_flake_files(exclude_patterns)
+        for flake in flakes:
+            flake.inputs[:0] = self.fail_inputs
+        return flakes
+
+    def update_flake_input(  # noqa: D102
+        self,
+        input_name: str,
+        flake_file: str,
+        work_dir: str | None = None,
+    ) -> None:
+        if input_name in self.fail_inputs:
+            msg = f"Simulated failure updating {input_name}"
+            raise FlakeServiceError(msg)
+        super().update_flake_input(input_name, flake_file, work_dir)
