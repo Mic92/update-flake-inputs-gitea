@@ -401,6 +401,7 @@ class TestProcessFlakeUpdates:
         finally:
             os.chdir(original_cwd)
 
+    @pytest.mark.impure
     def test_fails_at_end_when_individual_input_fails(
         self,
         tmp_path: Path,
