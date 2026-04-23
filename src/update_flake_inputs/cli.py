@@ -178,7 +178,7 @@ def process_flake_updates(  # noqa: PLR0913
 
     logger.info("Found %d flake files to process", len(flakes))
 
-    failed_inputs: list[tuple[str, str]] = []
+    failed_inputs: list[str] = []
 
     # Process each flake
     for flake in flakes:
@@ -253,11 +253,10 @@ def process_flake_updates(  # noqa: PLR0913
                     input_name,
                     flake.file_path,
                 )
-                failed_inputs.append((input_name, flake.file_path))
+                failed_inputs.append(f"{input_name} in {flake.file_path}")
 
     if failed_inputs:
-        summary = ", ".join(f"{name} in {path}" for name, path in failed_inputs)
-        msg = f"Failed to update {len(failed_inputs)} input(s): {summary}"
+        msg = f"Failed to process {len(failed_inputs)} input(s): {', '.join(failed_inputs)}"
         raise UpdateFlakeInputsError(msg)
 
 
@@ -296,8 +295,10 @@ def main() -> None:
 
         logger.info("Completed processing all flake updates")
 
-    except UpdateFlakeInputsError:
-        logger.exception("Error")
+    except UpdateFlakeInputsError as e:
+        # Operational errors carry a user-facing message; the underlying
+        # tracebacks were already logged where they occurred.
+        logger.error("%s", e)  # noqa: TRY400
         sys.exit(1)
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
