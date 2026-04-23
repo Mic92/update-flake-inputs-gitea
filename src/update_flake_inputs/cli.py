@@ -207,7 +207,7 @@ def process_flake_updates(  # noqa: PLR0913
                 )
 
                 # Create worktree and update input
-                with gitea_service.worktree(branch_name) as worktree_path:
+                with gitea_service.worktree(branch_name, base_branch) as worktree_path:
                     # Update the input
                     flake_service.update_flake_input(
                         input_name,
