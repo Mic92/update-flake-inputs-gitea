@@ -53,10 +53,15 @@
                 chmod +w -R ./src
                 cd ./src
 
+                # Give the inner nix a private store/state inside $TMPDIR so
+                # it can freely add and mutate store paths without needing
+                # write access to the outer /nix/store (which the sandboxed
+                # build user does not have).
                 export HOME=$TMPDIR
+                export NIX_STORE_DIR=$TMPDIR/store
                 export NIX_STATE_DIR=$TMPDIR/nix
                 export NIX_CONF_DIR=$TMPDIR/etc
-                mkdir -p "$NIX_CONF_DIR"
+                mkdir -p "$NIX_STORE_DIR" "$NIX_CONF_DIR"
                 echo "experimental-features = nix-command flakes" > "$NIX_CONF_DIR/nix.conf"
 
                 export GIT_AUTHOR_NAME="Test User"
