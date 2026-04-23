@@ -537,10 +537,10 @@ class TestProcessFlakeUpdates:
         try:
             # FailingFlakeService injects "bad-input" during discovery and
             # raises when asked to update it, simulating a 403 or dead ref
-            flake_service = FailingFlakeService(fail_inputs={"bad-input"})
+            flake_service = FailingFlakeService(fail_inputs=["bad-input"])
             test_gitea_service = MockGiteaService()
 
-            with pytest.raises(UpdateFlakeInputsError, match="Failed to update 1 input"):
+            with pytest.raises(UpdateFlakeInputsError, match="Failed to process 1 input"):
                 process_flake_updates(
                     flake_service,
                     test_gitea_service,
@@ -561,14 +561,14 @@ class TestProcessFlakeUpdates:
 class FailingFlakeService(FlakeService):
     """FlakeService that injects extra inputs during discovery and fails on them."""
 
-    def __init__(self, fail_inputs: set[str]) -> None:
-        """Initialize with the set of input names that should fail."""
+    def __init__(self, fail_inputs: list[str]) -> None:
+        """Initialize with the input names that should fail, in order."""
         self.fail_inputs = fail_inputs
 
     def discover_flake_files(self, exclude_patterns: str = "") -> list[Flake]:  # noqa: D102
         flakes = super().discover_flake_files(exclude_patterns)
         for flake in flakes:
-            flake.inputs[:0] = list(self.fail_inputs)
+            flake.inputs[:0] = self.fail_inputs
         return flakes
 
     def update_flake_input(  # noqa: D102
