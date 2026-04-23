@@ -14,6 +14,42 @@ from update_flake_inputs.flake_service import Flake, FlakeService
 from update_flake_inputs.gitea_service import GiteaService
 
 
+def _setup_git_repo(tmp_path: Path) -> None:
+    """Initialize a git repo in tmp_path with a bare remote called origin.
+
+    Assumes the caller has already written the files to commit.
+    """
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "Test User",
+        "GIT_AUTHOR_EMAIL": "test@example.com",
+        "GIT_COMMITTER_NAME": "Test User",
+        "GIT_COMMITTER_EMAIL": "test@example.com",
+    }
+    subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial commit"],
+        cwd=tmp_path,
+        check=True,
+        env=env,
+    )
+
+    remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
+    remote_dir.mkdir()
+    subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
+    subprocess.run(
+        ["git", "remote", "add", "origin", str(remote_dir)],
+        cwd=tmp_path,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "push", "-u", "origin", "main"],
+        cwd=tmp_path,
+        check=True,
+    )
+
+
 @dataclass
 class MockGiteaService(GiteaService):
     """Mock version of GiteaService that skips API calls."""
@@ -84,36 +120,7 @@ class TestProcessFlakeUpdates:
         # Generate lock file
         subprocess.run(["nix", "flake", "lock"], cwd=tmp_path, check=True)
 
-        # Initialize git repo
-        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"],
-            cwd=tmp_path,
-            check=True,
-            env={
-                **os.environ,
-                "GIT_AUTHOR_NAME": "Test User",
-                "GIT_AUTHOR_EMAIL": "test@example.com",
-                "GIT_COMMITTER_NAME": "Test User",
-                "GIT_COMMITTER_EMAIL": "test@example.com",
-            },
-        )
-
-        # Add remote
-        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
-        remote_dir.mkdir()
-        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
-        subprocess.run(
-            ["git", "remote", "add", "origin", str(remote_dir)],
-            cwd=tmp_path,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "push", "-u", "origin", "main"],
-            cwd=tmp_path,
-            check=True,
-        )
+        _setup_git_repo(tmp_path)
 
         # Change to test directory
         original_cwd = Path.cwd()
@@ -196,36 +203,7 @@ class TestProcessFlakeUpdates:
             tmp_path / "flake.lock",
         )
 
-        # Initialize git repo
-        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"],
-            cwd=tmp_path,
-            check=True,
-            env={
-                **os.environ,
-                "GIT_AUTHOR_NAME": "Test User",
-                "GIT_AUTHOR_EMAIL": "test@example.com",
-                "GIT_COMMITTER_NAME": "Test User",
-                "GIT_COMMITTER_EMAIL": "test@example.com",
-            },
-        )
-
-        # Add remote
-        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
-        remote_dir.mkdir()
-        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
-        subprocess.run(
-            ["git", "remote", "add", "origin", str(remote_dir)],
-            cwd=tmp_path,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "push", "-u", "origin", "main"],
-            cwd=tmp_path,
-            check=True,
-        )
+        _setup_git_repo(tmp_path)
 
         # Change to test directory
         original_cwd = Path.cwd()
@@ -308,36 +286,7 @@ class TestProcessFlakeUpdates:
             tmp_path / "flake.lock",
         )
 
-        # Initialize git repo
-        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"],
-            cwd=tmp_path,
-            check=True,
-            env={
-                **os.environ,
-                "GIT_AUTHOR_NAME": "Test User",
-                "GIT_AUTHOR_EMAIL": "test@example.com",
-                "GIT_COMMITTER_NAME": "Test User",
-                "GIT_COMMITTER_EMAIL": "test@example.com",
-            },
-        )
-
-        # Add remote
-        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
-        remote_dir.mkdir()
-        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
-        subprocess.run(
-            ["git", "remote", "add", "origin", str(remote_dir)],
-            cwd=tmp_path,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "push", "-u", "origin", "main"],
-            cwd=tmp_path,
-            check=True,
-        )
+        _setup_git_repo(tmp_path)
 
         # Change to test directory
         original_cwd = Path.cwd()
@@ -408,36 +357,7 @@ class TestProcessFlakeUpdates:
             tmp_path / "flake.lock",
         )
 
-        # Initialize git repo
-        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"],
-            cwd=tmp_path,
-            check=True,
-            env={
-                **os.environ,
-                "GIT_AUTHOR_NAME": "Test User",
-                "GIT_AUTHOR_EMAIL": "test@example.com",
-                "GIT_COMMITTER_NAME": "Test User",
-                "GIT_COMMITTER_EMAIL": "test@example.com",
-            },
-        )
-
-        # Add remote
-        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
-        remote_dir.mkdir()
-        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
-        subprocess.run(
-            ["git", "remote", "add", "origin", str(remote_dir)],
-            cwd=tmp_path,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "push", "-u", "origin", "main"],
-            cwd=tmp_path,
-            check=True,
-        )
+        _setup_git_repo(tmp_path)
 
         # Change to test directory
         original_cwd = Path.cwd()
@@ -504,35 +424,7 @@ class TestProcessFlakeUpdates:
             tmp_path / "flake.lock",
         )
 
-        # Initialize git repo with remote
-        subprocess.run(["git", "init", "-b", "main"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"],
-            cwd=tmp_path,
-            check=True,
-            env={
-                **os.environ,
-                "GIT_AUTHOR_NAME": "Test User",
-                "GIT_AUTHOR_EMAIL": "test@example.com",
-                "GIT_COMMITTER_NAME": "Test User",
-                "GIT_COMMITTER_EMAIL": "test@example.com",
-            },
-        )
-
-        remote_dir = tmp_path.parent / f"remote-{tmp_path.name}.git"
-        remote_dir.mkdir()
-        subprocess.run(["git", "init", "--bare"], cwd=remote_dir, check=True)
-        subprocess.run(
-            ["git", "remote", "add", "origin", str(remote_dir)],
-            cwd=tmp_path,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "push", "-u", "origin", "main"],
-            cwd=tmp_path,
-            check=True,
-        )
+        _setup_git_repo(tmp_path)
 
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
