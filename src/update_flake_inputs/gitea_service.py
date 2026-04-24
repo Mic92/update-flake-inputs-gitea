@@ -109,7 +109,10 @@ class GiteaService:
             with tempfile.TemporaryDirectory(prefix="flake-update-") as temp_dir:
                 worktree_path = Path(temp_dir) / branch_name
 
-                # Create worktree based on the base branch, not current HEAD
+                # Base the worktree on an up-to-date origin/<base_branch>,
+                # not current HEAD: the action may run on a feature branch
+                # or a shallow checkout.
+                subprocess.run(["git", "fetch", "origin", base_branch], check=True)
                 subprocess.run(
                     [
                         "git",
