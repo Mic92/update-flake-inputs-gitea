@@ -32,6 +32,14 @@
             ]
           );
 
+          mypyEnv = python.withPackages (
+            ps: with ps; [
+              config.packages.update-flake-inputs
+              mypy
+              pytest
+            ]
+          );
+
           mkPytestCheck =
             {
               impure ? false,
@@ -86,6 +94,17 @@
 
           checks.pytest = mkPytestCheck { };
           checks.pytest-impure = mkPytestCheck { impure = true; };
+
+          checks.mypy = pkgs.runCommand "mypy" { nativeBuildInputs = [ mypyEnv ]; } ''
+            cp -r ${./.} ./src
+            chmod +w -R ./src
+            cd ./src
+
+            export HOME=$TMPDIR
+            mypy .
+
+            touch $out
+          '';
 
           treefmt = {
             projectRootFile = "flake.nix";
