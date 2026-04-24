@@ -93,11 +93,12 @@ class GiteaService:
             raise
 
     @contextlib.contextmanager
-    def worktree(self, branch_name: str) -> Iterator[Path]:
+    def worktree(self, branch_name: str, base_branch: str) -> Iterator[Path]:
         """Context manager for creating and cleaning up a git worktree.
 
         Args:
             branch_name: Name of the branch to create worktree for
+            base_branch: Base branch to start from (e.g. "main")
 
         Yields:
             Path to the worktree directory
@@ -108,7 +109,10 @@ class GiteaService:
             with tempfile.TemporaryDirectory(prefix="flake-update-") as temp_dir:
                 worktree_path = Path(temp_dir) / branch_name
 
-                # Create worktree
+                # Base the worktree on an up-to-date origin/<base_branch>,
+                # not current HEAD: the action may run on a feature branch
+                # or a shallow checkout.
+                subprocess.run(["git", "fetch", "origin", base_branch], check=True)
                 subprocess.run(
                     [
                         "git",
@@ -117,6 +121,7 @@ class GiteaService:
                         str(worktree_path),
                         "-b",
                         branch_name,
+                        f"origin/{base_branch}",
                     ],
                     check=True,
                 )
