@@ -79,6 +79,17 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--merge-style",
+        default=os.environ.get("MERGE_STYLE", "default"),
+        help=(
+            "Merge style for auto-merge (e.g. merge, rebase, rebase-merge, squash). "
+            '"default" (default) fetches the repository default. '
+            "Empty string omits the field from the API request. "
+            "(defaults to MERGE_STYLE env var)"
+        ),
+    )
+
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -278,6 +289,7 @@ def main() -> None:
             git_author_email=args.git_author_email,
             git_committer_name=args.git_committer_name,
             git_committer_email=args.git_committer_email,
+            merge_style=args.merge_style,
         )
 
         # Process updates

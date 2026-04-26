@@ -57,6 +57,7 @@ class GiteaService:
     git_author_email: str = "gitea-actions[bot]@noreply.gitea.io"
     git_committer_name: str = "gitea-actions[bot]"
     git_committer_email: str = "gitea-actions[bot]@noreply.gitea.io"
+    merge_style: str = "default"
 
     def __post_init__(self) -> None:
         """Post-initialization processing."""
@@ -88,6 +89,10 @@ class GiteaService:
                 self.repo,
                 repo_info.get("permissions", {}),
             )
+
+            if self.merge_style == "default":
+                self.merge_style = str(repo_info.get("default_merge_style", "merge"))
+
         except APIError:
             logger.exception("Failed to validate token")
             raise
@@ -389,10 +394,12 @@ class GiteaService:
         endpoint = f"/repos/{self.owner}/{self.repo}/pulls/{pr_number}/merge"
 
         merge_data: dict[str, object] = {
-            "Do": "merge",
             "merge_when_checks_succeed": True,
             "delete_branch_after_merge": True,
         }
+
+        if self.merge_style:
+            merge_data["Do"] = self.merge_style
 
         # Keep retrying if we get "Please try again later"
         max_retries = 5

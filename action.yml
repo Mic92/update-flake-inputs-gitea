@@ -30,6 +30,10 @@ inputs:
     description: 'Automatically merge PRs when checks succeed'
     required: false
     default: 'false'
+  merge-style:
+    description: 'Merge style for auto-merge (e.g. merge, rebase, rebase-merge, squash). "default" fetches the repository default. Empty string omits the field from the API request.'
+    required: false
+    default: 'default'
   github-token:
     description: 'GitHub token for avoiding rate limits when fetching flake inputs'
     required: false
@@ -62,6 +66,8 @@ runs:
           AUTO_MERGE_FLAG="--auto-merge"
         fi
 
+        MERGE_STYLE_FLAG=(--merge-style "${{ inputs.merge-style }}")
+
         # Prepend GitHub access token to NIX_CONFIG if provided
         our_nix_config="extra-experimental-features = nix-command flakes"
         if [[ -n "${{ inputs.github-token }}" ]]; then
@@ -85,4 +91,5 @@ runs:
           --git-author-email "${{ inputs.git-author-email }}" \
           --git-committer-name "${{ inputs.git-committer-name }}" \
           --git-committer-email "${{ inputs.git-committer-email }}" \
-          $AUTO_MERGE_FLAG
+          $AUTO_MERGE_FLAG \
+          "${MERGE_STYLE_FLAG[@]}"
