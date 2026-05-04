@@ -353,6 +353,29 @@ class GiteaService:
             logger.exception("Failed to find pull request for %s -> %s", head_branch, base_branch)
         return None
 
+    def delete_branch(self, branch: str) -> None:
+        """Delete a remote branch if it exists.
+
+        Args:
+            branch: Name of the branch to delete
+
+        """
+        result = subprocess.run(
+            ["git", "ls-remote", "--heads", "origin", branch],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if not result.stdout.strip():
+            return
+
+        subprocess.run(
+            ["git", "push", "origin", "--delete", branch],
+            check=True,
+            capture_output=True,
+        )
+        logger.info("Deleted remote branch %s", branch)
+
     def _merge_pull_request(self, pr_number: int) -> None:
         """Merge a pull request when checks succeed.
 
