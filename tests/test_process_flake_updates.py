@@ -52,7 +52,11 @@ def _setup_git_repo(tmp_path: Path) -> None:
 
 @dataclass
 class MockGiteaService(GiteaService):
-    """Mock version of GiteaService that skips API calls."""
+    """Mock version of GiteaService that skips API calls.
+
+    create_pull_request is fully mocked (records attempts).
+    delete_branch uses the real implementation (git push --delete).
+    """
 
     # Override defaults for test
     api_url: str = "https://gitea.example.com"
@@ -486,6 +490,70 @@ class TestProcessFlakeUpdates:
             expected_commits = 2
             assert len(commits) == expected_commits
             assert "Update flake-utils" in commits[0]
+
+        finally:
+            os.chdir(original_cwd)
+
+    def test_deletes_stale_branch_when_input_already_merged(
+        self,
+        tmp_path: Path,
+        fixtures_path: Path,
+    ) -> None:
+        """Test that a stale update branch is deleted when the input is up-to-date.
+
+        Simulates the state after a previous run created a PR, but the same
+        update was separately merged into main. The branch still exists on
+        the remote and the mock knows about the open PR. Running the action
+        should detect no changes and delete the stale branch.
+        """
+        # Use a local input that is already up-to-date (no network needed)
+        flake_content = (fixtures_path / "up-to-date" / "flake.nix").read_text()
+        absolute_path = fixtures_path / "local-flake-repo"
+        patched_content = flake_content.replace(
+            "path:../local-flake-repo",
+            f"path:{absolute_path}",
+        )
+
+        (tmp_path / "flake.nix").write_text(patched_content)
+        subprocess.run(["nix", "flake", "lock"], cwd=tmp_path, check=True)
+
+        _setup_git_repo(tmp_path)
+
+        # Create a stale remote branch to simulate a previous PR's branch
+        subprocess.run(
+            ["git", "push", "origin", "main:update-local-test"],
+            cwd=tmp_path,
+            check=True,
+        )
+
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            flake_service = FlakeService()
+            test_gitea_service = MockGiteaService()
+
+            process_flake_updates(
+                flake_service,
+                test_gitea_service,
+                "",
+                "main",
+                "",
+                auto_merge=False,
+            )
+
+            # No PR should have been created
+            assert len(test_gitea_service.pr_creation_attempts) == 0
+
+            # Verify the remote branch was actually deleted
+            result = subprocess.run(
+                ["git", "ls-remote", "--heads", "origin", "update-local-test"],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=tmp_path,
+            )
+            assert result.stdout.strip() == ""
 
         finally:
             os.chdir(original_cwd)

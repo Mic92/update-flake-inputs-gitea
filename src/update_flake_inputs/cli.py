@@ -242,6 +242,7 @@ def process_flake_updates(  # noqa: PLR0913
                             input_name,
                             flake.file_path,
                         )
+                        gitea_service.delete_branch(branch_name)
 
             except Exception:
                 logger.exception(
