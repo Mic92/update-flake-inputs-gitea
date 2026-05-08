@@ -176,16 +176,25 @@ class FlakeService:
             flake_dir = absolute_flake_path.parent or Path()
             absolute_flake_dir = flake_dir.resolve()
 
-            # Use nix flake update to update specific input
-            # The shallow URL is needed because we may not have the full history
-            # of the git repository (e.g., when using shallow checkouts or worktrees)
+            # Use a shallow URL because worktrees may not have the full history.
+            # For subflakes, nix needs the URL to point to the git root
+            # with a dir= parameter rather than the subdirectory directly.
+            if work_dir:
+                git_root = Path(work_dir).resolve()
+                relative_dir = absolute_flake_dir.relative_to(git_root)
+                flake_url = f"git+file://{git_root}?shallow=1"
+                if str(relative_dir) != ".":
+                    flake_url += f"&dir={relative_dir}"
+            else:
+                flake_url = f"git+file://{absolute_flake_dir}?shallow=1"
+
             result = subprocess.run(
                 [
                     "nix",
                     "flake",
                     "update",
                     "--flake",
-                    f"git+file://{absolute_flake_dir}?shallow=1",
+                    flake_url,
                     input_name,
                 ],
                 cwd=str(flake_dir),
