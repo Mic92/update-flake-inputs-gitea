@@ -23,6 +23,24 @@ logger = logging.getLogger(__name__)
 HTTP_CONFLICT = 409
 
 
+def _commit_identity(worktree_path: Path, rev: str) -> tuple[str, str, str]:
+    """Return (tree, parents, message) for a commit.
+
+    Two commits with the same identity differ at most in author/committer
+    timestamps (and name/email), so a force push between them would only
+    rewrite metadata without changing the branch's effective state.
+    """
+    output = subprocess.run(
+        ["git", "log", "-1", "--format=%T%n%P%n%B", rev],
+        cwd=worktree_path,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    tree, parents, message = output.split("\n", 2)
+    return tree, parents, message
+
+
 @dataclass
 class Branch:
     """Represents a Git branch."""
@@ -272,6 +290,32 @@ class GiteaService:
             env=env,
             check=True,
         )
+
+        # Check if the remote branch's tip is the same commit modulo timestamps.
+        # We compare tree + parents + message: if any of those differ we still
+        # want to force push (e.g. history diverged, or message changed), but
+        # if only the author/committer dates differ then the new commit adds
+        # nothing of value and we skip the push to avoid noisy force pushes.
+        local_identity = _commit_identity(worktree_path, "HEAD")
+
+        # Fetch the remote branch (may not exist yet)
+        fetch_result = subprocess.run(
+            ["git", "fetch", "origin", branch_name],
+            cwd=worktree_path,
+            capture_output=True,
+            check=False,
+        )
+
+        if fetch_result.returncode == 0:
+            remote_identity = _commit_identity(worktree_path, f"origin/{branch_name}")
+
+            if local_identity == remote_identity:
+                logger.info(
+                    "Branch %s already at an equivalent commit "
+                    "(only timestamps would change), skipping push",
+                    branch_name,
+                )
+                return True
 
         # Push to remote
         subprocess.run(
