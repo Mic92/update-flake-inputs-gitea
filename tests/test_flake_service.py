@@ -214,6 +214,72 @@ class TestFlakeService:
             # The revision should have changed from our old one
             assert updated_lock["nodes"]["flake-utils"]["locked"]["rev"] != original_flake_utils_rev
 
+    @pytest.mark.impure
+    def test_update_subflake_input(
+        self,
+        flake_service: FlakeService,
+        fixtures_path: Path,
+    ) -> None:
+        """Test updating a flake input in a subdirectory (subflake)."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+
+            # Copy minimal flake to a subdirectory
+            sub_dir = temp_path / "sub"
+            sub_dir.mkdir()
+            shutil.copy(
+                fixtures_path / "minimal" / "flake.nix",
+                sub_dir / "flake.nix",
+            )
+            shutil.copy(
+                fixtures_path / "minimal" / "flake.lock",
+                sub_dir / "flake.lock",
+            )
+
+            # Copy minimal flake to root
+            shutil.copy(
+                fixtures_path / "minimal" / "flake.nix",
+                temp_path / "flake.nix",
+            )
+            shutil.copy(
+                fixtures_path / "minimal" / "flake.lock",
+                temp_path / "flake.lock",
+            )
+
+            # Initialize git repo in temp directory
+            subprocess.run(["git", "init"], cwd=temp_path, check=True)
+            subprocess.run(["git", "add", "."], cwd=temp_path, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "Initial commit"],
+                cwd=temp_path,
+                check=True,
+                env={
+                    **os.environ,
+                    "GIT_AUTHOR_NAME": "Test User",
+                    "GIT_AUTHOR_EMAIL": "test@example.com",
+                    "GIT_COMMITTER_NAME": "Test User",
+                    "GIT_COMMITTER_EMAIL": "test@example.com",
+                },
+            )
+
+            original_root_lock = json.loads((temp_path / "flake.lock").read_text())
+            original_root_rev = original_root_lock["nodes"]["flake-utils"]["locked"]["rev"]
+
+            original_sub_lock = json.loads((sub_dir / "flake.lock").read_text())
+            original_sub_rev = original_sub_lock["nodes"]["flake-utils"]["locked"]["rev"]
+
+            # Update flake-utils in the root flake
+            flake_service.update_flake_input("flake-utils", "flake.nix", str(temp_path))
+
+            updated_root_lock = json.loads((temp_path / "flake.lock").read_text())
+            assert updated_root_lock["nodes"]["flake-utils"]["locked"]["rev"] != original_root_rev
+
+            # Update flake-utils in the subflake
+            flake_service.update_flake_input("flake-utils", "sub/flake.nix", str(temp_path))
+
+            updated_sub_lock = json.loads((sub_dir / "flake.lock").read_text())
+            assert updated_sub_lock["nodes"]["flake-utils"]["locked"]["rev"] != original_sub_rev
+
     def test_update_nonexistent_input(
         self,
         flake_service: FlakeService,
