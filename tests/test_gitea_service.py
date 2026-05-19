@@ -57,16 +57,6 @@ def _make_service(
 
 
 class TestMergeStyleInit:
-    def test_default_fetches_repo_merge_style(self) -> None:
-        """Test that 'default' resolves to the repo's default_merge_style."""
-        svc = _make_service(default_merge_style="rebase")
-        assert svc.merge_style == "rebase"
-
-    def test_default_fetches_squash_merge_style(self) -> None:
-        """Test that 'default' resolves to squash when repo is configured for it."""
-        svc = _make_service(default_merge_style="squash")
-        assert svc.merge_style == "squash"
-
     def test_default_falls_back_to_merge(self) -> None:
         """When repo response lacks default_merge_style, fall back to merge."""
         responses: dict[tuple[str, str], Any] = {
@@ -112,9 +102,10 @@ class TestMergeStyleInRequest:
         assert data is not None
         assert "Do" not in data
 
-    def test_default_sends_repo_merge_style(self) -> None:
-        """Test that 'default' resolves to repo default and sends it as Do."""
+    def test_default_resolves_and_sends_repo_merge_style(self) -> None:
+        """Test that 'default' resolves to repo default_merge_style and sends it as Do."""
         svc = _make_service(default_merge_style="squash")
+        assert svc.merge_style == "squash"
         svc.responses[("POST", "/repos/test-owner/test-repo/pulls/1/merge")] = {}
 
         svc._merge_pull_request(1)  # noqa: SLF001
