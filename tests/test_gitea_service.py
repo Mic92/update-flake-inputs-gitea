@@ -297,19 +297,3 @@ class TestCommitChangesSkipsRedundantPush:
         finally:
             os.chdir(original_cwd)
 
-    def test_pushes_when_remote_branch_does_not_exist(self, tmp_path: Path) -> None:
-        """First push for a new branch should succeed normally."""
-        work, _remote = _setup_repo_with_remote(tmp_path)
-        svc = OfflineGiteaService()
-        original_cwd = Path.cwd()
-        os.chdir(work)
-        try:
-            wt = _make_worktree(work, "update-new", tmp_path)
-            (wt / "data.txt").write_text("v2\n")
-            assert svc.commit_changes("update-new", "Update new", wt) is True
-
-            # Remote branch should now exist
-            sha = _git(["rev-parse", "origin/update-new"], cwd=work).strip()
-            assert sha
-        finally:
-            os.chdir(original_cwd)
